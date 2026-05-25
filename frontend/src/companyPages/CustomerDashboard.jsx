@@ -34,6 +34,7 @@ const CustomerDashboard = () => {
     updateCustomer,
     deleteCustomer,
   } = useCustomerStore();
+  const [showForm, setShowForm] = useState(false); // ← NEW
 
   const [form, setForm] = useState({
     type: "individual",
@@ -105,6 +106,7 @@ const CustomerDashboard = () => {
       taxnumber: "",
       address: { country: "", region: "", addressLine: "", zipCode: "" },
     });
+    setShowForm(false); // ← close after submit
     fetchCustomers();
   };
 
@@ -145,22 +147,35 @@ const CustomerDashboard = () => {
               </div>
             </div>
           </div>
-
-          <div className="relative hidden md:block">
-            <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              size={16}
-            />
-            <input
-              type="text"
-              placeholder="Trouver un contact..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="pl-11 pr-4 py-2.5 bg-gray-50/50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl text-sm font-medium dark:text-white focus:ring-4 focus:ring-blue-500/5 focus:bg-white dark:focus:bg-gray-800 outline-none w-72 transition-all"
-            />
+          <div className="flex items-center gap-4">
+            <div className="relative hidden md:block">
+              <Search
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                size={16}
+              />
+              <input
+                type="text"
+                placeholder="Trouver un contact..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="pl-11 pr-4 py-2.5 bg-gray-50/50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl text-sm font-medium dark:text-white focus:ring-4 focus:ring-blue-500/5 focus:bg-white dark:focus:bg-gray-800 outline-none w-72 transition-all"
+              />
+            </div>
+            {/* TOGGLE FORM BUTTON */}
+            <button
+              onClick={() => setShowForm((prev) => !prev)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg ${
+                showForm
+                  ? "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 shadow-none"
+                  : "bg-indigo-600 text-white shadow-indigo-100 dark:shadow-none hover:bg-indigo-700"
+              }`}
+            >
+              {showForm ? <X size={14} /> : <Plus size={14} />}
+              {showForm ? "Annuler" : "Nouveau Client"}
+            </button>
           </div>
         </header>
 
@@ -203,221 +218,235 @@ const CustomerDashboard = () => {
           </div>
 
           {/* SECTION FORMULAIRE */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white dark:bg-gray-900 rounded-[2.5rem] border border-gray-100 dark:border-gray-800 shadow-xl shadow-gray-200/30 dark:shadow-none overflow-hidden"
-          >
-            <div className="px-8 py-6 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/50 dark:to-gray-900">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-2xl bg-gray-900 dark:bg-white flex items-center justify-center text-white dark:text-gray-900">
-                  {editing ? <Edit3 size={18} /> : <Plus size={18} />}
+          <AnimatePresence>
+            {showForm && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-gray-900 rounded-[2.5rem] border border-gray-100 dark:border-gray-800 shadow-xl shadow-gray-200/30 dark:shadow-none overflow-hidden"
+              >
+                <div className="px-8 py-6 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/50 dark:to-gray-900">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-2xl bg-gray-900 dark:bg-white flex items-center justify-center text-white dark:text-gray-900">
+                      {editing ? <Edit3 size={18} /> : <Plus size={18} />}
+                    </div>
+
+                    <div>
+                      <h2 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">
+                        {editing
+                          ? "Modifier le compte"
+                          : "Enregistrer un nouveau contact"}
+                      </h2>
+                      <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tighter">
+                        Saisir les informations de profil et d’adresse
+                      </p>
+                    </div>
+                  </div>
+
+                  {editing && (
+                    <button
+                      onClick={() => setEditing(null)}
+                      className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all"
+                    >
+                      <X size={20} />
+                    </button>
+                  )}
                 </div>
 
-                <div>
-                  <h2 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">
-                    {editing
-                      ? "Modifier le compte"
-                      : "Enregistrer un nouveau contact"}
-                  </h2>
-                  <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tighter">
-                    Saisir les informations de profil et d’adresse
-                  </p>
-                </div>
-              </div>
+                <form onSubmit={handleSubmit} className="p-8 lg:p-10 space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-x-8 gap-y-6">
+                    <FormGroup label="Type" icon={<Users size={14} />}>
+                      <select
+                        className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                        value={form.type}
+                        onChange={(e) =>
+                          setForm({ ...form, type: e.target.value })
+                        }
+                      >
+                        <option value="individual">Compte particulier</option>
+                        <option value="professional">
+                          Professionnel / Entreprise
+                        </option>
+                      </select>
+                    </FormGroup>
 
-              {editing && (
-                <button
-                  onClick={() => setEditing(null)}
-                  className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all"
-                >
-                  <X size={20} />
-                </button>
-              )}
-            </div>
+                    <FormGroup
+                      label="Nom complet"
+                      icon={<User size={14} />}
+                      className="md:col-span-2"
+                    >
+                      <input
+                        placeholder="ex. John Doe ou Tech Solutions LLC"
+                        className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                        value={form.name}
+                        onChange={(e) =>
+                          setForm({ ...form, name: e.target.value })
+                        }
+                      />
+                    </FormGroup>
 
-            <form onSubmit={handleSubmit} className="p-8 lg:p-10 space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-x-8 gap-y-6">
-                <FormGroup label="Type" icon={<Users size={14} />}>
-                  <select
-                    className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                    value={form.type}
-                    onChange={(e) => setForm({ ...form, type: e.target.value })}
-                  >
-                    <option value="individual">Compte particulier</option>
-                    <option value="professional">
-                      Professionnel / Entreprise
-                    </option>
-                  </select>
-                </FormGroup>
+                    <FormGroup label="Civilité" icon={<Hash size={14} />}>
+                      <select
+                        className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                        value={form.civility}
+                        onChange={(e) =>
+                          setForm({ ...form, civility: e.target.value })
+                        }
+                      >
+                        <option>M.</option>
+                        <option>Mme</option>
+                      </select>
+                    </FormGroup>
 
-                <FormGroup
-                  label="Nom complet"
-                  icon={<User size={14} />}
-                  className="md:col-span-2"
-                >
-                  <input
-                    placeholder="ex. John Doe ou Tech Solutions LLC"
-                    className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  />
-                </FormGroup>
+                    <FormGroup
+                      label="Nom de l’entreprise"
+                      icon={<Building size={14} />}
+                      className="md:col-span-2"
+                    >
+                      <input
+                        placeholder="ex. Tech Solutions LLC"
+                        className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                        value={form.companyname}
+                        onChange={(e) =>
+                          setForm({ ...form, companyname: e.target.value })
+                        }
+                      />
+                    </FormGroup>
 
-                <FormGroup label="Civilité" icon={<Hash size={14} />}>
-                  <select
-                    className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                    value={form.civility}
-                    onChange={(e) =>
-                      setForm({ ...form, civility: e.target.value })
-                    }
-                  >
-                    <option>M.</option>
-                    <option>Mme</option>
-                  </select>
-                </FormGroup>
+                    <FormGroup
+                      label="Site web"
+                      icon={<Globe size={14} />}
+                      className="md:col-span-2"
+                    >
+                      <input
+                        type="url"
+                        placeholder="ex. https://www.techsolutions.com"
+                        className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                        value={form.website}
+                        onChange={(e) =>
+                          setForm({ ...form, website: e.target.value })
+                        }
+                      />
+                    </FormGroup>
 
-                <FormGroup
-                  label="Nom de l’entreprise"
-                  icon={<Building size={14} />}
-                  className="md:col-span-2"
-                >
-                  <input
-                    placeholder="ex. Tech Solutions LLC"
-                    className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                    value={form.companyname}
-                    onChange={(e) =>
-                      setForm({ ...form, companyname: e.target.value })
-                    }
-                  />
-                </FormGroup>
+                    <FormGroup
+                      label="Numéro fiscal"
+                      icon={<Hash size={14} />}
+                      className="md:col-span-2"
+                    >
+                      <input
+                        placeholder="ex. 123456789"
+                        className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                        value={form.taxnumber}
+                        onChange={(e) =>
+                          setForm({ ...form, taxnumber: e.target.value })
+                        }
+                      />
+                    </FormGroup>
 
-                <FormGroup
-                  label="Site web"
-                  icon={<Globe size={14} />}
-                  className="md:col-span-2"
-                >
-                  <input
-                    type="url"
-                    placeholder="ex. https://www.techsolutions.com"
-                    className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                    value={form.website}
-                    onChange={(e) =>
-                      setForm({ ...form, website: e.target.value })
-                    }
-                  />
-                </FormGroup>
+                    <FormGroup
+                      label="Adresse e-mail"
+                      icon={<Mail size={14} />}
+                      className="md:col-span-2"
+                    >
+                      <input
+                        type="email"
+                        placeholder="contact@example.com"
+                        className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                        value={form.email}
+                        onChange={(e) =>
+                          setForm({ ...form, email: e.target.value })
+                        }
+                      />
+                    </FormGroup>
 
-                <FormGroup
-                  label="Numéro fiscal"
-                  icon={<Hash size={14} />}
-                  className="md:col-span-2"
-                >
-                  <input
-                    placeholder="ex. 123456789"
-                    className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                    value={form.taxnumber}
-                    onChange={(e) =>
-                      setForm({ ...form, taxnumber: e.target.value })
-                    }
-                  />
-                </FormGroup>
+                    <FormGroup
+                      label="Numéro de téléphone"
+                      icon={<Phone size={14} />}
+                      className="md:col-span-2"
+                    >
+                      <input
+                        type="number"
+                        placeholder="+21600000000"
+                        className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                        value={form.phone}
+                        onChange={(e) =>
+                          setForm({ ...form, phone: e.target.value })
+                        }
+                      />
+                    </FormGroup>
 
-                <FormGroup
-                  label="Adresse e-mail"
-                  icon={<Mail size={14} />}
-                  className="md:col-span-2"
-                >
-                  <input
-                    type="email"
-                    placeholder="contact@example.com"
-                    className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                    value={form.email}
-                    onChange={(e) =>
-                      setForm({ ...form, email: e.target.value })
-                    }
-                  />
-                </FormGroup>
+                    <div className="md:col-span-4 grid grid-cols-1 md:grid-cols-4 gap-6 p-6 bg-gray-50/50 dark:bg-gray-800/30 rounded-3xl border border-gray-100 dark:border-gray-800">
+                      <FormGroup label="Pays" icon={<Globe size={14} />}>
+                        <input
+                          placeholder="Pays"
+                          className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                          value={form.address.country}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              address: {
+                                ...form.address,
+                                country: e.target.value,
+                              },
+                            })
+                          }
+                        />
+                      </FormGroup>
 
-                <FormGroup
-                  label="Numéro de téléphone"
-                  icon={<Phone size={14} />}
-                  className="md:col-span-2"
-                >
-                  <input
-                    type="number"
-                    placeholder="+21600000000"
-                    className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                    value={form.phone}
-                    onChange={(e) =>
-                      setForm({ ...form, phone: e.target.value })
-                    }
-                  />
-                </FormGroup>
+                      <FormGroup label="Région" icon={<MapPin size={14} />}>
+                        <input
+                          placeholder="État / Province"
+                          className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                          value={form.address.region}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              address: {
+                                ...form.address,
+                                region: e.target.value,
+                              },
+                            })
+                          }
+                        />
+                      </FormGroup>
 
-                <div className="md:col-span-4 grid grid-cols-1 md:grid-cols-4 gap-6 p-6 bg-gray-50/50 dark:bg-gray-800/30 rounded-3xl border border-gray-100 dark:border-gray-800">
-                  <FormGroup label="Pays" icon={<Globe size={14} />}>
-                    <input
-                      placeholder="Pays"
-                      className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                      value={form.address.country}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          address: { ...form.address, country: e.target.value },
-                        })
-                      }
-                    />
-                  </FormGroup>
+                      <FormGroup
+                        label="Adresse"
+                        icon={<Navigation size={14} />}
+                        className="md:col-span-2"
+                      >
+                        <input
+                          placeholder="Rue, bâtiment, etc."
+                          className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                          value={form.address.addressLine}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              address: {
+                                ...form.address,
+                                addressLine: e.target.value,
+                              },
+                            })
+                          }
+                        />
+                      </FormGroup>
+                    </div>
+                  </div>
 
-                  <FormGroup label="Région" icon={<MapPin size={14} />}>
-                    <input
-                      placeholder="État / Province"
-                      className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                      value={form.address.region}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          address: { ...form.address, region: e.target.value },
-                        })
-                      }
-                    />
-                  </FormGroup>
-
-                  <FormGroup
-                    label="Adresse"
-                    icon={<Navigation size={14} />}
-                    className="md:col-span-2"
-                  >
-                    <input
-                      placeholder="Rue, bâtiment, etc."
-                      className="custom-input dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                      value={form.address.addressLine}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          address: {
-                            ...form.address,
-                            addressLine: e.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </FormGroup>
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-4">
-                <button
-                  type="submit"
-                  className="w-full md:w-auto bg-gray-900 dark:bg-blue-600 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-600 dark:hover:bg-blue-500 transition-all shadow-xl shadow-blue-100 dark:shadow-none flex items-center justify-center gap-3"
-                >
-                  {editing ? <Edit3 size={16} /> : <Plus size={16} />}
-                  {editing ? "Mettre à jour le membre" : "Créer le membre"}
-                </button>
-              </div>
-            </form>
-          </motion.div>
+                  <div className="flex justify-end pt-4">
+                    <button
+                      type="submit"
+                      className="w-full md:w-auto bg-gray-900 dark:bg-blue-600 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-600 dark:hover:bg-blue-500 transition-all shadow-xl shadow-blue-100 dark:shadow-none flex items-center justify-center gap-3"
+                    >
+                      {editing ? <Edit3 size={16} /> : <Plus size={16} />}
+                      {editing ? "Mettre à jour le membre" : "Créer le membre"}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* SECTION LISTE */}
           <div className="space-y-6">

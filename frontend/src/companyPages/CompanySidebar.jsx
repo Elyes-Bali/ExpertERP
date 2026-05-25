@@ -10,7 +10,6 @@ import {
   ShoppingCart,
   X,
   Percent,
-  Folder,
   Gauge,
   Laptop,
   Wrench,
@@ -22,20 +21,46 @@ import { useAuthStore } from "../store/authStore";
 import { FiLogOut } from "react-icons/fi";
 import { useCompanyStore } from "../store/companyStore";
 
+const DEFAULT_MENUS = {
+  documents: true,
+  cards: false,
+  company: false,
+  teches: false,
+  internet: false,
+  taxes: false,
+  ventes: false,
+  achats: false,
+  parametres: false,
+};
+
 const CompanySidebar = ({ activeItem = "Settings", isOpen, setIsOpen }) => {
   const { company, fetchCompany } = useCompanyStore();
-  const [openMenus, setOpenMenus] = useState({
-    documents: true,
-    cards: false,
+  const { user, logout } = useAuthStore();
+
+  const [openMenus, setOpenMenus] = useState(() => {
+    try {
+      const saved = localStorage.getItem("sidebarOpenMenus");
+      return saved ? JSON.parse(saved) : DEFAULT_MENUS;
+    } catch {
+      return DEFAULT_MENUS;
+    }
   });
-  const { isAuthenticated, user, logout } = useAuthStore();
 
   const toggleMenu = (menu) => {
-    setOpenMenus((prev) => ({
-      ...prev,
-      [menu]: !prev[menu],
-    }));
+    setOpenMenus((prev) => {
+      const updated = { ...prev, [menu]: !prev[menu] };
+      localStorage.setItem("sidebarOpenMenus", JSON.stringify(updated));
+      return updated;
+    });
   };
+
+  // Only close sidebar on mobile when a link is clicked
+  const handleLinkClick = () => {
+    if (window.innerWidth < 1024) {
+      setIsOpen(false);
+    }
+  };
+
   useEffect(() => {
     fetchCompany();
   }, []);
@@ -46,12 +71,10 @@ const CompanySidebar = ({ activeItem = "Settings", isOpen, setIsOpen }) => {
       <div className="p-8 flex items-center justify-between">
         <div className="flex items-center gap-3 bg-indigo-600 p-3 rounded-2xl shadow-lg">
           <Building2 className="text-white w-6 h-6" />
-          <Link to="/" onClick={() => setIsOpen(false)}>
+          <Link to="/" onClick={handleLinkClick}>
             <span className="text-white font-bold text-xl">ExpertERP</span>
           </Link>
         </div>
-
-        {/* Mobile close */}
         <button
           onClick={() => setIsOpen(false)}
           className="lg:hidden p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -63,17 +86,15 @@ const CompanySidebar = ({ activeItem = "Settings", isOpen, setIsOpen }) => {
       {/* NAVIGATION */}
       <nav className="flex-1 px-4 space-y-2 pb-8">
         <SidebarItem icon={<LayoutDashboard size={20} />} label="Tableau de bord" />
-        {/* Company */}
+
+        {/* ENTREPRISE */}
         <div>
           <button
             onClick={() => toggleMenu("company")}
             className="w-full flex justify-between items-center p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase"
           >
             Entreprise
-            <ChevronDown
-              size={14}
-              className={`transition ${openMenus.company ? "rotate-180" : ""}`}
-            />
+            <ChevronDown size={14} className={`transition ${openMenus.company ? "rotate-180" : ""}`} />
           </button>
 
           <AnimatePresence>
@@ -84,51 +105,38 @@ const CompanySidebar = ({ activeItem = "Settings", isOpen, setIsOpen }) => {
                 exit={{ height: 0, opacity: 0 }}
                 className="space-y-1 overflow-hidden"
               >
-                <SidebarDropdown label="Paramètres">
+                <SidebarDropdown
+                  label="Paramètres"
+                  open={openMenus.parametres}
+                  onToggle={() => toggleMenu("parametres")}
+                >
                   {!company ? (
-                    <Link to="/company" onClick={() => setIsOpen(false)}>
+                    <Link to="/company" onClick={handleLinkClick}>
                       <SidebarSubItem label="Profil de l'entreprise" />
                     </Link>
                   ) : (
                     <>
-                      {user?.role == "owner" && (
+                      {user?.role === "owner" && (
                         <>
-                          <Link to="/company" onClick={() => setIsOpen(false)}>
+                          <Link to="/company" onClick={handleLinkClick}>
                             <SidebarSubItem label="Profil de l'entreprise" />
                           </Link>
-
-                          <Link
-                            to="/Financial-accounting"
-                            onClick={() => setIsOpen(false)}
-                          >
+                          <Link to="/Financial-accounting" onClick={handleLinkClick}>
                             <SidebarSubItem label="Comptes financiers" />
                           </Link>
-                          <Link to="/projects" onClick={() => setIsOpen(false)}>
+                          <Link to="/projects" onClick={handleLinkClick}>
                             <SidebarSubItem label="Projets" />
                           </Link>
-                          <Link
-                            to="/brands-and-categories"
-                            onClick={() => setIsOpen(false)}
-                          >
+                          <Link to="/brands-and-categories" onClick={handleLinkClick}>
                             <SidebarSubItem label="Marques, catégories et unités" />
                           </Link>
-
-                          <Link
-                            to="/warehouses"
-                            onClick={() => setIsOpen(false)}
-                          >
+                          <Link to="/warehouses" onClick={handleLinkClick}>
                             <SidebarSubItem label="Entrepôts" />
                           </Link>
-                          <Link
-                            to="/New-Worker"
-                            onClick={() => setIsOpen(false)}
-                          >
+                          <Link to="/New-Worker" onClick={handleLinkClick}>
                             <SidebarSubItem label="Nouvel employé" />
                           </Link>
-                          <Link
-                            to="/Company-workers"
-                            onClick={() => setIsOpen(false)}
-                          >
+                          <Link to="/Company-workers" onClick={handleLinkClick}>
                             <SidebarSubItem label="Employés de l'entreprise" />
                           </Link>
                         </>
@@ -149,10 +157,7 @@ const CompanySidebar = ({ activeItem = "Settings", isOpen, setIsOpen }) => {
               className="w-full flex justify-between items-center p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase"
             >
               Documents
-              <ChevronDown
-                size={14}
-                className={`transition ${openMenus.documents ? "rotate-180" : ""}`}
-              />
+              <ChevronDown size={14} className={`transition ${openMenus.documents ? "rotate-180" : ""}`} />
             </button>
 
             <AnimatePresence>
@@ -164,54 +169,41 @@ const CompanySidebar = ({ activeItem = "Settings", isOpen, setIsOpen }) => {
                   className="space-y-1 overflow-hidden"
                 >
                   {(user?.role === "owner" || user?.role === "seller") && (
-                    <SidebarDropdown label="Ventes">
-                      <Link
-                        to="/Client-orders"
-                        onClick={() => setIsOpen(false)}
-                      >
+                    <SidebarDropdown
+                      label="Ventes"
+                      open={openMenus.ventes}
+                      onToggle={() => toggleMenu("ventes")}
+                    >
+                      <Link to="/Client-orders" onClick={handleLinkClick}>
                         <SidebarSubItem label="Commande client" />
                       </Link>
-                      <Link
-                        to="/All-Client-Orders"
-                        onClick={() => setIsOpen(false)}
-                      >
+                      <Link to="/All-Client-Orders" onClick={handleLinkClick}>
                         <SidebarSubItem label="Toutes les commandes clients" />
                       </Link>
-                      <Link to="/invoices" onClick={() => setIsOpen(false)}>
+                      <Link to="/invoices" onClick={handleLinkClick}>
                         <SidebarSubItem label="Facture" />
                       </Link>
-                      <Link
-                        to="/All-Sales-Invoices"
-                        onClick={() => setIsOpen(false)}
-                      >
+                      <Link to="/All-Sales-Invoices" onClick={handleLinkClick}>
                         <SidebarSubItem label="Toutes les factures de vente" />
                       </Link>
                     </SidebarDropdown>
                   )}
                   {(user?.role === "owner" || user?.role === "buyer") && (
-                    <SidebarDropdown label="Achats">
-                      <Link
-                        to="/Supplier-order"
-                        onClick={() => setIsOpen(false)}
-                      >
+                    <SidebarDropdown
+                      label="Achats"
+                      open={openMenus.achats}
+                      onToggle={() => toggleMenu("achats")}
+                    >
+                      <Link to="/Supplier-order" onClick={handleLinkClick}>
                         <SidebarSubItem label="Commande fournisseur" />
                       </Link>
-                      <Link
-                        to="/All-Supplier-orders"
-                        onClick={() => setIsOpen(false)}
-                      >
+                      <Link to="/All-Supplier-orders" onClick={handleLinkClick}>
                         <SidebarSubItem label="Toutes les commandes fournisseurs" />
                       </Link>
-                      <Link
-                        to="/Supplier-invoice"
-                        onClick={() => setIsOpen(false)}
-                      >
+                      <Link to="/Supplier-invoice" onClick={handleLinkClick}>
                         <SidebarSubItem label="Facture fournisseur" />
                       </Link>
-                      <Link
-                        to="/All-Supplier-invoices"
-                        onClick={() => setIsOpen(false)}
-                      >
+                      <Link to="/All-Supplier-invoices" onClick={handleLinkClick}>
                         <SidebarSubItem label="Toutes les factures fournisseurs" />
                       </Link>
                     </SidebarDropdown>
@@ -221,231 +213,150 @@ const CompanySidebar = ({ activeItem = "Settings", isOpen, setIsOpen }) => {
             </AnimatePresence>
           </div>
         )}
+
+        {/* DATA CARDS */}
         {company && (
-          <>
-            {/* DATA CARDS */}
-            <div>
-              <button
-                onClick={() => toggleMenu("cards")}
-                className="w-full flex justify-between items-center p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mt-4"
-              >
-                Cartes de données
-                <ChevronDown
-                  size={14}
-                  className={`transition ${openMenus.cards ? "rotate-180" : ""}`}
-                />
-              </button>
+          <div>
+            <button
+              onClick={() => toggleMenu("cards")}
+              className="w-full flex justify-between items-center p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mt-4"
+            >
+              Cartes de données
+              <ChevronDown size={14} className={`transition ${openMenus.cards ? "rotate-180" : ""}`} />
+            </button>
 
-              <AnimatePresence>
-                {openMenus.cards && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="space-y-1 overflow-hidden"
-                  >
-                    {(user?.role === "owner" || user?.role === "hr") && (
-                      <>
-                        <Link to="/customers" onClick={() => setIsOpen(false)}>
-                          <SidebarItem
-                            icon={<Users size={18} />}
-                            label="Clients"
-                          />
-                        </Link>
-
-                        <Link to="/Suppliers" onClick={() => setIsOpen(false)}>
-                          <SidebarItem
-                            icon={<ShoppingCart size={18} />}
-                            label="Fournisseurs"
-                          />
-                        </Link>
-
-                        <Link
-                          to="/Workers-Payments"
-                          onClick={() => setIsOpen(false)}
-                        >
-                          <SidebarItem
-                            icon={<Wallet size={18} />}
-                            label="Paiements des employés"
-                          />
-                        </Link>
-                      </>
-                    )}
-                    <Link to="/Products" onClick={() => setIsOpen(false)}>
-                      <SidebarItem
-                        icon={<Package size={18} />}
-                        label="Produits et services"
-                      />
-                    </Link>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </>
-        )}
-
-        {company && (
-          <>
-            {/* Taxes CARDS */}
-            {(user?.role === "owner" || user?.role === "tsm") && (
-              <div>
-                <button
-                  onClick={() => toggleMenu("teches")}
-                  className="w-full flex justify-between items-center p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mt-4"
+            <AnimatePresence>
+              {openMenus.cards && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="space-y-1 overflow-hidden"
                 >
-                  Services techniques
-                  <ChevronDown
-                    size={14}
-                    className={`transition ${openMenus.teches ? "rotate-180" : ""}`}
-                  />
-                </button>
-
-                <AnimatePresence>
-                  {openMenus.teches && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="space-y-1 overflow-hidden"
-                    >
-                      <Link
-                        to="/Machine-Types"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        <SidebarItem
-                          icon={<Laptop size={18} />}
-                          label="Types de machines"
-                        />
+                  {(user?.role === "owner" || user?.role === "hr") && (
+                    <>
+                      <Link to="/customers" onClick={handleLinkClick}>
+                        <SidebarItem icon={<Users size={18} />} label="Clients" />
                       </Link>
-                      <Link to="/Materials" onClick={() => setIsOpen(false)}>
-                        <SidebarItem
-                          icon={<Package size={18} />}
-                          label="Matériaux"
-                        />
+                      <Link to="/Suppliers" onClick={handleLinkClick}>
+                        <SidebarItem icon={<ShoppingCart size={18} />} label="Fournisseurs" />
                       </Link>
-                      <Link to="/Notes" onClick={() => setIsOpen(false)}>
-                        <SidebarItem
-                          icon={<Package size={18} />}
-                          label="Notes"
-                        />
+                      <Link to="/Workers-Payments" onClick={handleLinkClick}>
+                        <SidebarItem icon={<Wallet size={18} />} label="Paiements des employés" />
                       </Link>
-
-                      <Link
-                        to="/Technical-Services"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        <SidebarItem
-                          icon={<Wrench size={18} />}
-                          label="Services techniques"
-                        />
-                      </Link>
-                    </motion.div>
+                    </>
                   )}
-                </AnimatePresence>
-              </div>
-            )}
-          </>
+                  <Link to="/Products" onClick={handleLinkClick}>
+                    <SidebarItem icon={<Package size={18} />} label="Produits et services" />
+                  </Link>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         )}
 
-        {company && (
-          <>
-            {/* Internet CARDS */}
-            {(user?.role === "owner" || user?.role === "asm") && (
-              <div>
-                <button
-                  onClick={() => toggleMenu("internet")}
-                  className="w-full flex justify-between items-center p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mt-4"
+        {/* TECHNICAL SERVICES */}
+        {company && (user?.role === "owner" || user?.role === "tsm") && (
+          <div>
+            <button
+              onClick={() => toggleMenu("teches")}
+              className="w-full flex justify-between items-center p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mt-4"
+            >
+              Services techniques
+              <ChevronDown size={14} className={`transition ${openMenus.teches ? "rotate-180" : ""}`} />
+            </button>
+
+            <AnimatePresence>
+              {openMenus.teches && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="space-y-1 overflow-hidden"
                 >
-                  Internet
-                  <ChevronDown
-                    size={14}
-                    className={`transition ${openMenus.internet ? "rotate-180" : ""}`}
-                  />
-                </button>
-
-                <AnimatePresence>
-                  {openMenus.internet && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="space-y-1 overflow-hidden"
-                    >
-                      <Link
-                        to="/Contract-Types"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        <SidebarItem
-                          icon={<Gauge size={18} />}
-                          label="Types de contrats"
-                        />
-                      </Link>
-                        <Link
-                        to="/Internet-Clients"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        <SidebarItem
-                          icon={<Users size={18} />}
-                          label="Clients Internet"
-                        />
-                      </Link>
-                      <Link
-                        to="/Internet-Payments"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        <SidebarItem
-                          icon={<CreditCard size={18} />}
-                          label="Paiements Internet"
-                        />
-                      </Link>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
-          </>
+                  <Link to="/Machine-Types" onClick={handleLinkClick}>
+                    <SidebarItem icon={<Laptop size={18} />} label="Types de machines" />
+                  </Link>
+                  <Link to="/Materials" onClick={handleLinkClick}>
+                    <SidebarItem icon={<Package size={18} />} label="Matériaux" />
+                  </Link>
+                  <Link to="/Notes" onClick={handleLinkClick}>
+                    <SidebarItem icon={<Package size={18} />} label="Notes" />
+                  </Link>
+                  <Link to="/Technical-Services" onClick={handleLinkClick}>
+                    <SidebarItem icon={<Wrench size={18} />} label="Services techniques" />
+                  </Link>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         )}
 
-        {company && (
-          <>
-            {/* Taxes CARDS */}
-            {user?.role == "owner" && (
-              <div>
-                <button
-                  onClick={() => toggleMenu("taxes")}
-                  className="w-full flex justify-between items-center p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mt-4"
+        {/* INTERNET */}
+        {company && (user?.role === "owner" || user?.role === "asm") && (
+          <div>
+            <button
+              onClick={() => toggleMenu("internet")}
+              className="w-full flex justify-between items-center p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mt-4"
+            >
+              Internet
+              <ChevronDown size={14} className={`transition ${openMenus.internet ? "rotate-180" : ""}`} />
+            </button>
+
+            <AnimatePresence>
+              {openMenus.internet && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="space-y-1 overflow-hidden"
                 >
-                  Taxes
-                  <ChevronDown
-                    size={14}
-                    className={`transition ${openMenus.taxes ? "rotate-180" : ""}`}
-                  />
-                </button>
-
-                <AnimatePresence>
-                  {openMenus.taxes && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="space-y-1 overflow-hidden"
-                    >
-                      <Link to="/taxes" onClick={() => setIsOpen(false)}>
-                        <SidebarItem
-                          icon={<Percent size={18} />}
-                          label="Taxes et TVA"
-                        />
-                      </Link>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
-          </>
+                  <Link to="/Contract-Types" onClick={handleLinkClick}>
+                    <SidebarItem icon={<Gauge size={18} />} label="Types de contrats" />
+                  </Link>
+                  <Link to="/Internet-Clients" onClick={handleLinkClick}>
+                    <SidebarItem icon={<Users size={18} />} label="Clients Internet" />
+                  </Link>
+                  <Link to="/Internet-Payments" onClick={handleLinkClick}>
+                    <SidebarItem icon={<CreditCard size={18} />} label="Paiements Internet" />
+                  </Link>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         )}
+
+        {/* TAXES */}
+        {company && user?.role === "owner" && (
+          <div>
+            <button
+              onClick={() => toggleMenu("taxes")}
+              className="w-full flex justify-between items-center p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mt-4"
+            >
+              Taxes
+              <ChevronDown size={14} className={`transition ${openMenus.taxes ? "rotate-180" : ""}`} />
+            </button>
+
+            <AnimatePresence>
+              {openMenus.taxes && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="space-y-1 overflow-hidden"
+                >
+                  <Link to="/taxes" onClick={handleLinkClick}>
+                    <SidebarItem icon={<Percent size={18} />} label="Taxes et TVA" />
+                  </Link>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+
         {/* SETTINGS */}
         <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
-          <Link to="/profile" onClick={() => setIsOpen(false)}>
+          <Link to="/profile" onClick={handleLinkClick}>
             <SidebarItem
               icon={<Settings size={20} />}
               label="Paramètres"
@@ -460,21 +371,14 @@ const CompanySidebar = ({ activeItem = "Settings", isOpen, setIsOpen }) => {
         <div className="flex items-center gap-3 mb-2">
           <div className="h-8 w-8 rounded-full overflow-hidden mr-3">
             <img
-              src={
-                user?.profileImage ||
-                "https://placehold.co/40x40/4F46E5/ffffff?text=User"
-              }
+              src={user?.profileImage || "https://placehold.co/40x40/4F46E5/ffffff?text=User"}
               alt={user?.name || "Avatar utilisateur"}
               className="h-full w-full object-cover"
             />
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-              {user.name}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              {user.email}
-            </p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{user.name}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
           </div>
         </div>
         <motion.button
@@ -490,7 +394,6 @@ const CompanySidebar = ({ activeItem = "Settings", isOpen, setIsOpen }) => {
     </div>
   );
 
-
   return (
     <>
       {/* DESKTOP */}
@@ -502,7 +405,6 @@ const CompanySidebar = ({ activeItem = "Settings", isOpen, setIsOpen }) => {
       <AnimatePresence>
         {isOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
-            {/* Overlay */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -510,8 +412,6 @@ const CompanySidebar = ({ activeItem = "Settings", isOpen, setIsOpen }) => {
               onClick={() => setIsOpen(false)}
               className="absolute inset-0 bg-black/40"
             />
-
-            {/* Sidebar */}
             <motion.div
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
@@ -528,9 +428,6 @@ const CompanySidebar = ({ activeItem = "Settings", isOpen, setIsOpen }) => {
   );
 };
 
-/**
- * SIDEBAR ITEM
- */
 const SidebarItem = ({ icon, label, active }) => (
   <div
     className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition ${
@@ -544,37 +441,23 @@ const SidebarItem = ({ icon, label, active }) => (
   </div>
 );
 
-/**
- * DROPDOWN
- */
-const SidebarDropdown = ({ label, children }) => {
-  const [open, setOpen] = useState(false);
+const SidebarDropdown = ({ label, children, open, onToggle }) => (
+  <div className="px-2">
+    <button
+      onClick={onToggle}
+      className="w-full flex justify-between items-center p-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
+    >
+      {label}
+      <ChevronDown size={14} className={open ? "rotate-180 transition" : "transition"} />
+    </button>
+    {open && (
+      <div className="ml-4 mt-1 border-l border-gray-200 dark:border-gray-700 pl-2 space-y-1">
+        {children}
+      </div>
+    )}
+  </div>
+);
 
-  return (
-    <div className="px-2">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex justify-between items-center p-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
-      >
-        {label}
-        <ChevronDown
-          size={14}
-          className={open ? "rotate-180 transition" : "transition"}
-        />
-      </button>
-
-      {open && (
-        <div className="ml-4 mt-1 border-l border-gray-200 dark:border-gray-700 pl-2 space-y-1">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-};
-
-/**
- * SUB ITEM
- */
 const SidebarSubItem = ({ label }) => (
   <div className="p-2 text-sm text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-800 rounded-lg cursor-pointer">
     {label}

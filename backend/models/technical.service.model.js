@@ -43,6 +43,11 @@ const technicalServiceSchema = new mongoose.Schema(
       required: true,
     },
 
+    brand: {
+      type: String,
+     
+    },
+
     serialNumber: String,
 
     accessories: String,

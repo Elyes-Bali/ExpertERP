@@ -42,6 +42,7 @@ const InvoiceDashboard = () => {
   const { projects = [], fetchProjects } = useProjectStore();
   const [productSearch, setProductSearch] = useState({});
   const [items, setItems] = useState([]);
+  const [showForm, setShowForm] = useState(false); // ← NEW
 
   const [form, setForm] = useState({
     customer: "",
@@ -83,6 +84,7 @@ const InvoiceDashboard = () => {
     await createInvoice(formData);
     setItems([]);
     setForm({ customer: "", date: "", warehouse: "", project: "", note: "" });
+    setShowForm(false); // ← close after submit
     fetchInvoices();
   };
 
@@ -99,12 +101,10 @@ const InvoiceDashboard = () => {
     () =>
       invoices.filter(
         (inv) =>
-          inv.customer?.name
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          inv.project?.name.toLowerCase().includes(searchQuery.toLowerCase())
+          inv.customer?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          inv.project?.name.toLowerCase().includes(searchQuery.toLowerCase()),
       ),
-    [invoices, searchQuery]
+    [invoices, searchQuery],
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredInvoices.length / rowsPerPage));
@@ -115,11 +115,11 @@ const InvoiceDashboard = () => {
 
   const currentInvoices = filteredInvoices.slice(
     (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
+    currentPage * rowsPerPage,
   );
 
   return (
-  <div className="flex flex-col lg:flex-row min-h-screen bg-[#FDFDFE] dark:bg-gray-950 transition-colors duration-300">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-[#FDFDFE] dark:bg-gray-950 transition-colors duration-300">
       <CompanySidebar
         activeItem="Factures"
         isOpen={isSidebarOpen}
@@ -148,21 +148,36 @@ const InvoiceDashboard = () => {
             </div>
           </div>
 
-          <div className="relative hidden md:block">
-            <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              size={16}
-            />
-            <input
-              type="text"
-              placeholder="Rechercher une référence ou un client..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="pl-11 pr-4 py-2.5 bg-gray-50/50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl text-sm font-medium dark:text-white focus:ring-4 focus:ring-indigo-500/5 focus:bg-white dark:focus:bg-gray-800 outline-none w-72 transition-all"
-            />
+          <div className="flex items-center gap-4">
+            <div className="relative hidden md:block">
+              <Search
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                size={16}
+              />
+              <input
+                type="text"
+                placeholder="Rechercher une référence ou un client..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="pl-11 pr-4 py-2.5 bg-gray-50/50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl text-sm font-medium dark:text-white focus:ring-4 focus:ring-indigo-500/5 focus:bg-white dark:focus:bg-gray-800 outline-none w-72 transition-all"
+              />
+            </div>
+
+            {/* TOGGLE FORM BUTTON */}
+            <button
+              onClick={() => setShowForm((prev) => !prev)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg ${
+                showForm
+                  ? "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 shadow-none"
+                  : "bg-indigo-600 text-white shadow-indigo-100 dark:shadow-none hover:bg-indigo-700"
+              }`}
+            >
+              {showForm ? <X size={14} /> : <Plus size={14} />}
+              {showForm ? "Annuler" : "Nouvelle facture"}
+            </button>
           </div>
         </header>
 
@@ -192,206 +207,218 @@ const InvoiceDashboard = () => {
             />
           </div>
 
-          {/* FORM: CREATE INVOICE */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white dark:bg-gray-900 rounded-[2.5rem] border border-gray-100 dark:border-gray-800 shadow-xl shadow-gray-200/20 dark:shadow-none overflow-hidden"
-          >
-            <div className="px-8 py-6 border-b border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-100 dark:shadow-none">
-                <Plus size={18} />
-              </div>
-              <div>
-                <h2 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">
-                  Créer une nouvelle facture
-                </h2>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
-                  Spécifiez les détails de la transaction et les lignes
-                </p>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-8 lg:p-10 space-y-10">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <FormGroup label="Sélectionner un client" icon={<Briefcase size={14} />}>
-                  <select
-                    className="custom-input"
-                    value={form.customer}
-                    onChange={(e) => setForm({ ...form, customer: e.target.value })}
-                  >
-                    <option value="">Choisir un client...</option>
-                    {customers.map((c) => (
-                      <option key={c._id} value={c._id}>{c.name}</option>
-                    ))}
-                  </select>
-                </FormGroup>
-
-                <FormGroup label="Date de la facture" icon={<Calendar size={14} />}>
-                  <input
-                    type="date"
-                    className="custom-input"
-                    value={form.date}
-                    onChange={(e) => setForm({ ...form, date: e.target.value })}
-                  />
-                </FormGroup>
-
-                <FormGroup label="Entrepôt" icon={<Warehouse size={14} />}>
-                  <select
-                    className="custom-input"
-                    value={form.warehouse}
-                    onChange={(e) => setForm({ ...form, warehouse: e.target.value })}
-                  >
-                    <option value="">Source de stock...</option>
-                    {warehouses.map((w) => (
-                      <option key={w._id} value={w._id}>{w.name}</option>
-                    ))}
-                  </select>
-                </FormGroup>
-
-                <FormGroup label="Lien de projet" icon={<Layers size={14} />}>
-                  <select
-                    className="custom-input"
-                    value={form.project}
-                    onChange={(e) => setForm({ ...form, project: e.target.value })}
-                  >
-                    <option value="">Centre de coûts...</option>
-                    {projects.map((p) => (
-                      <option key={p._id} value={p._id}>{p.name}</option>
-                    ))}
-                  </select>
-                </FormGroup>
-              </div>
-
-              <FormGroup label="Notes / Conditions" icon={<FileText size={14} />}>
-                <textarea
-                  rows="2"
-                  placeholder="Conditions de paiement, coordonnées bancaires ou message personnel..."
-                  className="custom-input resize-none"
-                  value={form.note}
-                  onChange={(e) => setForm({ ...form, note: e.target.value })}
-                />
-              </FormGroup>
-
-              {/* LINE ITEMS */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between px-2">
-                  <h3 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">
-                    Articles de facturation
-                  </h3>
+          {/* FORM: CREATE INVOICE — toggled */}
+          <AnimatePresence>
+            {showForm && (
+              <motion.div
+                initial={{ opacity: 0, y: -16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -16 }}
+                transition={{ duration: 0.25 }}
+                className="bg-white dark:bg-gray-900 rounded-[2.5rem] border border-gray-100 dark:border-gray-800 shadow-xl shadow-gray-200/20 dark:shadow-none overflow-hidden"
+              >
+                <div className="px-8 py-6 border-b border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-100 dark:shadow-none">
+                      <Plus size={18} />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">
+                        Créer une nouvelle facture
+                      </h2>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                        Spécifiez les détails de la transaction et les lignes
+                      </p>
+                    </div>
+                  </div>
                   <button
-                    type="button"
-                    onClick={addItem}
-                    className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase flex items-center gap-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 px-4 py-2 rounded-xl transition-all"
+                    onClick={() => setShowForm(false)}
+                    className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
                   >
-                    <Plus size={14} /> Ajouter une ligne
+                    <X size={18} />
                   </button>
                 </div>
 
-                <div className="space-y-3">
-                  <AnimatePresence >
-                    {items.map((item, index) => (
-                      <motion.div
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        key={index}
-                        className="flex flex-col md:flex-row gap-4 p-5 bg-gray-50/50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 rounded-3xl items-end"
+                <form onSubmit={handleSubmit} className="p-8 lg:p-10 space-y-10">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <FormGroup label="Sélectionner un client" icon={<Briefcase size={14} />}>
+                      <select
+                        className="custom-input"
+                        value={form.customer}
+                        onChange={(e) => setForm({ ...form, customer: e.target.value })}
                       >
-                        <FormGroup label="Produit" icon={<Package size={12} />} className="flex-1">
-                          <div className="relative">
-                            <input
-                              type="text"
-                              placeholder="Sélectionner ou rechercher un produit..."
-                              className="custom-input"
-                              value={
-                                productSearch[index] ??
-                                products.find((p) => p._id === item.product)?.name ??
-                                ""
-                              }
-                              onFocus={() => setOpenIndex(index)}
-                              onChange={(e) =>
-                                setProductSearch({
-                                  ...productSearch,
-                                  [index]: e.target.value,
-                                })
-                              }
-                            />
+                        <option value="">Choisir un client...</option>
+                        {customers.map((c) => (
+                          <option key={c._id} value={c._id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </FormGroup>
 
-                            {openIndex === index && (
-                              <div className="absolute z-50 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl mt-2 max-h-52 overflow-y-auto shadow-lg">
-                                {products
-                                  .filter((p) =>
-                                    p.name.toLowerCase().includes((productSearch[index] || "").toLowerCase())
-                                  )
-                                  .map((p) => (
-                                    <div
-                                      key={p._id}
-                                      onClick={() => {
-                                        const newItems = [...items];
-                                        newItems[index].product = p._id;
-                                        setItems(newItems);
-                                        setProductSearch({ ...productSearch, [index]: p.name });
-                                        setOpenIndex(null);
-                                      }}
-                                      className="px-4 py-2 cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-sm dark:text-gray-200"
-                                    >
-                                      <div className="font-semibold">{p.name}</div>
-                                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                                        Stock : {p.stock} | {p.price} TND | TVA : {p.vat ? p.vat.value : 0}%
-                                      </div>
-                                    </div>
-                                  ))}
-                              </div>
-                            )}
-                          </div>
-                        </FormGroup>
-                        <FormGroup label="Qté" className="w-full md:w-32">
-                          <input
-                            type="number"
-                            className="custom-input"
-                            placeholder="0"
-                            value={item.quantity}
-                            onChange={(e) => {
-                              const newItems = [...items];
-                              newItems[index].quantity = Number(e.target.value);
-                              setItems(newItems);
-                            }}
-                          />
-                        </FormGroup>
-                        <button
-                          type="button"
-                          onClick={() => removeItem(index)}
-                          className="p-3.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-rose-500 rounded-2xl hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:border-rose-100 transition-all"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
+                    <FormGroup label="Date de la facture" icon={<Calendar size={14} />}>
+                      <input
+                        type="date"
+                        className="custom-input"
+                        value={form.date}
+                        onChange={(e) => setForm({ ...form, date: e.target.value })}
+                      />
+                    </FormGroup>
 
-                  {items.length === 0 && (
-                    <div className="py-10 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-[2.5rem] flex flex-col items-center justify-center text-gray-300 dark:text-gray-700">
-                      <Package size={24} className="mb-2 opacity-20" />
-                      <p className="text-[10px] font-black uppercase tracking-widest">
-                        La facture est vide
-                      </p>
+                    <FormGroup label="Entrepôt" icon={<Warehouse size={14} />}>
+                      <select
+                        className="custom-input"
+                        value={form.warehouse}
+                        onChange={(e) => setForm({ ...form, warehouse: e.target.value })}
+                      >
+                        <option value="">Source de stock...</option>
+                        {warehouses.map((w) => (
+                          <option key={w._id} value={w._id}>{w.name}</option>
+                        ))}
+                      </select>
+                    </FormGroup>
+
+                    <FormGroup label="Lien de projet" icon={<Layers size={14} />}>
+                      <select
+                        className="custom-input"
+                        value={form.project}
+                        onChange={(e) => setForm({ ...form, project: e.target.value })}
+                      >
+                        <option value="">Centre de coûts...</option>
+                        {projects.map((p) => (
+                          <option key={p._id} value={p._id}>{p.name}</option>
+                        ))}
+                      </select>
+                    </FormGroup>
+                  </div>
+
+                  <FormGroup label="Notes / Conditions" icon={<FileText size={14} />}>
+                    <textarea
+                      rows="2"
+                      placeholder="Conditions de paiement, coordonnées bancaires ou message personnel..."
+                      className="custom-input resize-none"
+                      value={form.note}
+                      onChange={(e) => setForm({ ...form, note: e.target.value })}
+                    />
+                  </FormGroup>
+
+                  {/* LINE ITEMS */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between px-2">
+                      <h3 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">
+                        Articles de facturation
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={addItem}
+                        className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase flex items-center gap-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 px-4 py-2 rounded-xl transition-all"
+                      >
+                        <Plus size={14} /> Ajouter une ligne
+                      </button>
                     </div>
-                  )}
-                </div>
-              </div>
 
-              <div className="flex justify-end pt-6">
-                <button
-                  type="submit"
-                  disabled={!form.customer || !form.date || items.length === 0}
-                  className="w-full md:w-auto bg-gray-900 dark:bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-600 dark:hover:bg-indigo-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 transition-all shadow-xl shadow-gray-200/50 dark:shadow-none"
-                >
-                  Générer et enregistrer la facture
-                </button>
-              </div>
-            </form>
-          </motion.div>
+                    <div className="space-y-3">
+                      <AnimatePresence>
+                        {items.map((item, index) => (
+                          <motion.div
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            key={index}
+                            className="flex flex-col md:flex-row gap-4 p-5 bg-gray-50/50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 rounded-3xl items-end"
+                          >
+                            <FormGroup label="Produit" icon={<Package size={12} />} className="flex-1">
+                              <div className="relative">
+                                <input
+                                  type="text"
+                                  placeholder="Sélectionner ou rechercher un produit..."
+                                  className="custom-input"
+                                  value={
+                                    productSearch[index] ??
+                                    products.find((p) => p._id === item.product)?.name ??
+                                    ""
+                                  }
+                                  onFocus={() => setOpenIndex(index)}
+                                  onChange={(e) =>
+                                    setProductSearch({ ...productSearch, [index]: e.target.value })
+                                  }
+                                />
+                                {openIndex === index && (
+                                  <div className="absolute z-50 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl mt-2 max-h-52 overflow-y-auto shadow-lg">
+                                    {products
+                                      .filter((p) =>
+                                        p.name.toLowerCase().includes((productSearch[index] || "").toLowerCase())
+                                      )
+                                      .map((p) => (
+                                        <div
+                                          key={p._id}
+                                          onClick={() => {
+                                            const newItems = [...items];
+                                            newItems[index].product = p._id;
+                                            setItems(newItems);
+                                            setProductSearch({ ...productSearch, [index]: p.name });
+                                            setOpenIndex(null);
+                                          }}
+                                          className="px-4 py-2 cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-sm dark:text-gray-200"
+                                        >
+                                          <div className="font-semibold">{p.name}</div>
+                                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                                            Stock : {p.stock} | {p.price} TND | TVA : {p.vat ? p.vat.value : 0}%
+                                          </div>
+                                        </div>
+                                      ))}
+                                  </div>
+                                )}
+                              </div>
+                            </FormGroup>
+
+                            <FormGroup label="Qté" className="w-full md:w-32">
+                              <input
+                                type="number"
+                                className="custom-input"
+                                placeholder="0"
+                                value={item.quantity}
+                                onChange={(e) => {
+                                  const newItems = [...items];
+                                  newItems[index].quantity = Number(e.target.value);
+                                  setItems(newItems);
+                                }}
+                              />
+                            </FormGroup>
+
+                            <button
+                              type="button"
+                              onClick={() => removeItem(index)}
+                              className="p-3.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-rose-500 rounded-2xl hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:border-rose-100 transition-all"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+
+                      {items.length === 0 && (
+                        <div className="py-10 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-[2.5rem] flex flex-col items-center justify-center text-gray-300 dark:text-gray-700">
+                          <Package size={24} className="mb-2 opacity-20" />
+                          <p className="text-[10px] font-black uppercase tracking-widest">
+                            La facture est vide
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-6">
+                    <button
+                      type="submit"
+                      disabled={!form.customer || !form.date || items.length === 0}
+                      className="w-full md:w-auto bg-gray-900 dark:bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-600 dark:hover:bg-indigo-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 transition-all shadow-xl shadow-gray-200/50 dark:shadow-none"
+                    >
+                      Générer et enregistrer la facture
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* INVOICE INDEX */}
           <div className="space-y-6">
@@ -410,123 +437,150 @@ const InvoiceDashboard = () => {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <AnimatePresence>
-                  {currentInvoices.map((inv) => (
-                    <motion.div
-                      key={inv._id}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] border border-gray-100 dark:border-gray-800 hover:border-indigo-100 dark:hover:border-indigo-900 hover:shadow-2xl hover:shadow-indigo-500/5 transition-all flex flex-col justify-between group"
-                    >
-                      <div>
-                        <div className="flex justify-between items-start mb-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600">
-                              <FileText size={20} />
-                            </div>
-                            <div>
-                              <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">
-                                RÉF-FACT
-                              </span>
-                              <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase truncate max-w-[150px]">
-                                {inv.customer?.name}
-                              </h4>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => downloadPDF(inv._id)}
-                              className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-900 transition-colors shadow-lg shadow-indigo-100 dark:shadow-none"
-                            >
-                              <Download size={12} /> PDF
-                            </button>
-                            <button
-                              onClick={() => handleDeleteInvoice(inv._id)}
-                              className="flex items-center gap-2 bg-rose-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-600 transition-colors shadow-lg shadow-rose-100 dark:shadow-none"
-                            >
-                              Supprimer
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-6 mb-6">
-                          <div>
-                            <p className="text-[9px] font-black text-gray-900 dark:text-gray-100 uppercase mb-1">
-                              Projet
-                            </p>
-                            <p className="text-[11px] font-bold text-gray-800 dark:text-gray-400 uppercase">
-                              {inv.project?.name || "Facturation standard"}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-[9px] font-black text-gray-900 dark:text-gray-100 uppercase mb-1">
-                              Date d’émission
-                            </p>
-                            <p className="text-[11px] font-bold text-gray-800 dark:text-gray-400">
-                              {new Date(inv.date).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2 border-t border-gray-50 dark:border-gray-800 pt-4">
-                          {inv.items.slice(0, 4).map((item, i) => (
-                            <div
-                              key={i}
-                              className="flex flex-wrap justify-between items-center text-[11px] font-medium text-gray-500 dark:text-gray-400"
-                            >
-                              <span className="flex items-center gap-2 max-w-[60%] truncate">
-                                <div className="w-1 h-1 rounded-full bg-gray-200 dark:bg-gray-700"></div>{" "}
-                                {item.name}
-                              </span>
-                              <div className="flex gap-3 font-bold text-gray-800 dark:text-gray-200">
-                                <span>Qté : {item.quantity}</span>
-                                <span>{item.total?.toLocaleString()} TND</span>
+              <div className="bg-white dark:bg-gray-900 rounded-[2rem] border border-gray-100 dark:border-gray-800 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-100 dark:border-gray-800">
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Client</th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Date d'émission</th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Articles</th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Sous-total</th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">TVA</th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Taxes</th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Timbre</th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Total</th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Statut</th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <AnimatePresence>
+                        {currentInvoices.map((inv, index) => (
+                          <motion.tr
+                            key={inv._id}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 8 }}
+                            transition={{ delay: index * 0.03 }}
+                            className="border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-indigo-900/5 hover:border-indigo-100 dark:hover:border-indigo-900 transition-colors group"
+                          >
+                            {/* Client */}
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 shrink-0">
+                                  <FileText size={16} />
+                                </div>
+                                <div>
+                                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">RÉF-FACT</p>
+                                  <p className="text-xs font-black text-gray-900 dark:text-white uppercase truncate max-w-[120px]">
+                                    {inv.customer?.name}
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                          ))}
-                          {inv.items.length > 4 && (
-                            <p className="text-[9px] text-gray-400 italic">
-                              +{inv.items.length - 4} autres articles
-                            </p>
-                          )}
-                        </div>
-                      </div>
+                            </td>
 
-                      <div className="mt-8 pt-6 border-t-2 border-dashed border-gray-50 dark:border-gray-800 flex items-center justify-between">
-                        <div>
-                          <p className="text-[10px] font-bold text-gray-500 uppercase">
-                            Sous-total : {inv.subtotal} TND
-                          </p>
-                          <p className="text-[10px] font-bold text-gray-500 uppercase">
-                            TVA totale : {inv.totalVAT} TND
-                          </p>
-                          <p className="text-[10px] font-bold text-gray-500 uppercase">
-                            Taxes : {inv.totalTaxes} TND
-                          </p>
-                          <p className="text-[10px] font-bold text-gray-500 uppercase">
-                            Timbre fiscal : {inv.timbreFiscal} TND
-                          </p>
+                            {/* Date */}
+                            <td className="px-6 py-4">
+                              <p className="text-[11px] font-bold text-gray-800 dark:text-gray-400 whitespace-nowrap">
+                                {new Date(inv.date).toLocaleDateString()}
+                              </p>
+                            </td>
 
-                          <p className="text-[10px] font-bold text-gray-500 uppercase">Total à payer</p>
-                          <p className="text-lg font-black text-gray-900 dark:text-white tracking-tighter">
-                            {inv.netPay || "0.00"} TND
-                          </p>
-                        </div>
-                        <div
-                          className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                            inv.netPay > 0
-                              ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600"
-                              : "bg-amber-50 dark:bg-amber-900/20 text-amber-600"
-                          }`}
-                        >
-                          {inv.netPay > 0 ? "Finalisée" : "Brouillon"}
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                            {/* Articles */}
+                            <td className="px-6 py-4 max-w-[200px]">
+                              <div className="space-y-1">
+                                {inv.items.slice(0, 2).map((item, i) => (
+                                  <div key={i} className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <div className="w-1 h-1 rounded-full bg-gray-200 dark:bg-gray-700 shrink-0"></div>
+                                      <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 truncate">
+                                        {item.name}
+                                      </span>
+                                    </div>
+                                    <div className="flex gap-2 shrink-0 font-bold text-gray-800 dark:text-gray-200 text-[10px] whitespace-nowrap">
+                                      <span>Qté : {item.quantity}</span>
+                                      <span>{item.total?.toLocaleString()} TND</span>
+                                    </div>
+                                  </div>
+                                ))}
+                                {inv.items.length > 2 && (
+                                  <p className="text-[9px] text-gray-400 italic">
+                                    +{inv.items.length - 2} autres articles
+                                  </p>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Sous-total */}
+                            <td className="px-6 py-4">
+                              <p className="text-[11px] font-bold text-gray-500 uppercase whitespace-nowrap">
+                                {inv.subtotal} TND
+                              </p>
+                            </td>
+
+                            {/* TVA */}
+                            <td className="px-6 py-4">
+                              <p className="text-[11px] font-bold text-gray-500 uppercase whitespace-nowrap">
+                                {inv.totalVAT} TND
+                              </p>
+                            </td>
+
+                            {/* Taxes */}
+                            <td className="px-6 py-4">
+                              <p className="text-[11px] font-bold text-gray-500 uppercase whitespace-nowrap">
+                                {inv.totalTaxes} TND
+                              </p>
+                            </td>
+
+                            {/* Timbre */}
+                            <td className="px-6 py-4">
+                              <p className="text-[11px] font-bold text-gray-500 uppercase whitespace-nowrap">
+                                {inv.timbreFiscal} TND
+                              </p>
+                            </td>
+
+                            {/* Total */}
+                            <td className="px-6 py-4">
+                              <p className="text-sm font-black text-gray-900 dark:text-white tracking-tighter whitespace-nowrap">
+                                {inv.netPay || "0.00"} TND
+                              </p>
+                            </td>
+
+                            {/* Statut */}
+                            <td className="px-6 py-4">
+                              <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest whitespace-nowrap ${
+                                inv.netPay > 0
+                                  ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600"
+                                  : "bg-amber-50 dark:bg-amber-900/20 text-amber-600"
+                              }`}>
+                                {inv.netPay > 0 ? "Finalisée" : "Brouillon"}
+                              </span>
+                            </td>
+
+                            {/* Actions */}
+                            <td className="px-6 py-4">
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => downloadPDF(inv._id)}
+                                  className="flex items-center gap-1.5 bg-indigo-600 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-900 transition-colors shadow-lg shadow-indigo-100 dark:shadow-none"
+                                >
+                                  <Download size={12} /> PDF
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteInvoice(inv._id)}
+                                  className="flex items-center gap-1.5 bg-rose-500 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-600 transition-colors shadow-lg shadow-rose-100 dark:shadow-none"
+                                >
+                                  Supprimer
+                                </button>
+                              </div>
+                            </td>
+                          </motion.tr>
+                        ))}
+                      </AnimatePresence>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
 
@@ -612,15 +666,9 @@ const StatCard = ({ title, value, icon, color, label }) => (
       {icon}
     </div>
     <div>
-      <p className="text-[10px] font-black text-gray-400 mb-1 uppercase tracking-widest">
-        {title}
-      </p>
-      <h3 className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter">
-        {value}
-      </h3>
-      <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-tighter">
-        {label}
-      </p>
+      <p className="text-[10px] font-black text-gray-400 mb-1 uppercase tracking-widest">{title}</p>
+      <h3 className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter">{value}</h3>
+      <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-tighter">{label}</p>
     </div>
   </motion.div>
 );

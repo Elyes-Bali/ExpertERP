@@ -44,6 +44,7 @@ const TechnicalService = () => {
     clientName: "",
     clientNumber: "",
     machineType: "",
+    brand: "",
     serialNumber: "",
     accessories: "",
     observations: "",
@@ -94,6 +95,7 @@ const TechnicalService = () => {
       clientName: service.clientName,
       clientNumber: service.clientNumber,
       machineType: service.machineType?._id,
+      brand: service.brand,
       serialNumber: service.serialNumber,
       accessories: service.accessories,
       observations: service.observations,
@@ -265,6 +267,20 @@ const TechnicalService = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+
+               <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                  marque
+                </label>
+                <input
+                  placeholder="e.g. Apple, Samsung"
+                  value={form.brand}
+                  className="w-full p-3 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                  onChange={(e) =>
+                    setForm({ ...form, brand: e.target.value })
+                  }
+                />
               </div>
 
               <div className="space-y-1.5">

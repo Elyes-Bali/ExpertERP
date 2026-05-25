@@ -19,7 +19,7 @@ export const VERIFICATION_EMAIL_TEMPLATE = `
     <p>Enter this code on the verification page to complete your registration.</p>
     <p>This code will expire in 15 minutes for security reasons.</p>
     <p>If you didn't create an account with us, please ignore this email.</p>
-    <p>Best regards,<br>UniProfs AI</p>
+    <p>Best regards,<br>EXPERT-ERP</p>
   </div>
   <div style="text-align: center; margin-top: 20px; color: #888; font-size: 0.8em;">
     <p>This is an automated message, please do not reply to this email.</p>
@@ -56,7 +56,7 @@ export const PASSWORD_RESET_SUCCESS_TEMPLATE = `
       <li>Avoid using the same password across multiple sites</li>
     </ul>
     <p>Thank you for helping us keep your account secure.</p>
-    <p>Best regards,<br>UniProfs AI</p>
+    <p>Best regards,<br>EXPERT-ERP</p>
   </div>
   <div style="text-align: center; margin-top: 20px; color: #888; font-size: 0.8em;">
     <p>This is an automated message, please do not reply to this email.</p>
@@ -85,7 +85,7 @@ export const PASSWORD_RESET_REQUEST_TEMPLATE = `
       <a href="{resetURL}" style="background-color: #4CAF50; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
     </div>
     <p>This link will expire in 1 hour for security reasons.</p>
-    <p>Best regards,<br>UniProfs AI</p>
+    <p>Best regards,<br>EXPERT-ERP</p>
   </div>
   <div style="text-align: center; margin-top: 20px; color: #888; font-size: 0.8em;">
     <p>This is an automated message, please do not reply to this email.</p>
@@ -100,18 +100,18 @@ export const WELCOME_EMAIL_TEMPLATE = `
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Welcome to UniProfs AI</title>
+  <title>Welcome to EXPERT-ERP</title>
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
 
   <div style="background: linear-gradient(to right, #4CAF50, #45a049); padding: 20px; text-align: center;">
-    <h1 style="color: white; margin: 0;">Welcome to UniProfs AI 🎓</h1>
+    <h1 style="color: white; margin: 0;">Welcome to EXPERT-ERP 🎓</h1>
   </div>
 
   <div style="background-color: #f9f9f9; padding: 20px; border-radius: 0 0 5px 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
     <p>Hello <strong>{name}</strong>,</p>
 
-    <p>We're excited to welcome you to <strong>UniProfs AI</strong> — your new AI-powered study companion built to help you succeed with:</p>
+    <p>We're excited to welcome you to <strong>EXPERT-ERP</strong> — your new AI-powered study companion built to help you succeed with:</p>
 
     <ul>
       <li>Smart course summaries</li>
@@ -130,9 +130,9 @@ export const WELCOME_EMAIL_TEMPLATE = `
       </div>
     </div>
 
-    <p>If you ever need help, the UniProfs AI team is here for you.</p>
+    <p>If you ever need help, the EXPERT-ERP team is here for you.</p>
 
-    <p>Best regards,<br>UniProfs AI Team</p>
+    <p>Best regards,<br>EXPERT-ERP Team</p>
   </div>
 
   <div style="text-align: center; margin-top: 20px; color: #888; font-size: 0.8em;">

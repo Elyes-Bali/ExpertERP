@@ -58,6 +58,7 @@ const ProductDashboard = () => {
     fetchUnits,
   } = useCatalogStore();
   const { warehouses, fetchWarehouses } = useWarehouseStore();
+  const [showForm, setShowForm] = useState(false); // ← NEW
 
   const [form, setForm] = useState({
     name: "",
@@ -166,7 +167,7 @@ const ProductDashboard = () => {
       width: 0,
       weight: 0,
     });
-
+    setShowForm(false); // ← close after submit
     fetchProducts();
   };
 
@@ -218,12 +219,13 @@ const ProductDashboard = () => {
   };
 
   return (
-   <div className="flex flex-col lg:flex-row min-h-screen bg-[#FDFDFE] dark:bg-gray-950 transition-colors duration-300">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-[#FDFDFE] dark:bg-gray-950 transition-colors duration-300">
       <CompanySidebar
         activeItem="Produits"
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
-      /><main className="flex-1 flex flex-col min-w-0">
+      />
+      <main className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         <header className="h-20 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-6 lg:px-10 sticky top-0 z-40">
           <div className="flex items-center gap-5">
@@ -257,21 +259,35 @@ const ProductDashboard = () => {
             </button>
 
             {/* 🔍 Search */}
-            <div className="relative hidden md:block">
-              <Search
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                size={16}
-              />
-              <input
-                type="text"
-                placeholder="Rechercher un article..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="pl-11 pr-4 py-2.5 bg-gray-50/50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl text-sm font-medium dark:text-white focus:ring-4 focus:ring-indigo-500/5 focus:bg-white dark:focus:bg-gray-800 outline-none w-64 transition-all"
-              />
+            <div className="flex items-center gap-4">
+              <div className="relative hidden md:block">
+                <Search
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                  size={16}
+                />
+                <input
+                  type="text"
+                  placeholder="Rechercher un article..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="pl-11 pr-4 py-2.5 bg-gray-50/50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl text-sm font-medium dark:text-white focus:ring-4 focus:ring-indigo-500/5 focus:bg-white dark:focus:bg-gray-800 outline-none w-64 transition-all"
+                />
+              </div>
+              {/* TOGGLE FORM BUTTON */}
+              <button
+                onClick={() => setShowForm((prev) => !prev)}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg ${
+                  showForm
+                    ? "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 shadow-none"
+                    : "bg-indigo-600 text-white shadow-indigo-100 dark:shadow-none hover:bg-indigo-700"
+                }`}
+              >
+                {showForm ? <X size={14} /> : <Plus size={14} />}
+                {showForm ? "Annuler" : "Nouveau produit"}
+              </button>
             </div>
           </div>
         </header>
@@ -312,7 +328,9 @@ const ProductDashboard = () => {
                     fetchProducts();
                     alert("Produits importés avec succès 🚀");
                   } catch (err) {
-                    alert("Échec de l'importation, aucun produit valide trouvé dans le fichier ❌");
+                    alert(
+                      "Échec de l'importation, aucun produit valide trouvé dans le fichier ❌",
+                    );
                   }
                 }}
                 className="hidden"
@@ -327,326 +345,344 @@ const ProductDashboard = () => {
               </label>
             </div>
           </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-xl shadow-gray-200/20 dark:shadow-none overflow-hidden transition-colors duration-300"
-          >
-            {/* Header Section */}
-            <div className="px-8 py-6 border-b border-gray-50 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-800/30 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-100 dark:shadow-none">
-                  {editingId ? <Edit3 size={20} /> : <Plus size={20} />}
-                </div>
-                <div>
-                  <h2 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">
-                    {editingId
-                      ? "Modifier le produit existant"
-                      : "Créer un nouvel actif principal"}
-                  </h2>
-                  <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-tighter">
-                    Entrez les spécifications du produit ci-dessous
-                  </p>
-                </div>
-              </div>
-
-              {editingId && (
-                <button
-                  onClick={() => {
-                    setEditingId(null);
-                    setForm({
-                      name: "",
-                      type: "material",
-                      sellingPrice: "",
-                      includeTax: false,
-                      tax: "",
-                      vat: "",
-                      stock: 0,
-                      inStock: true,
-                      warehouse: "",
-                      category: "",
-                      brand: "",
-                      unit: "",
-                      description: "",
-                    });
-                  }}
-                  className="px-4 py-2 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-colors"
-                >
-                  Annuler la modification
-                </button>
-              )}
-            </div>
-
-            <div className="p-8 lg:p-10">
-              <form onSubmit={handleSubmit} className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6 min-w-0">
-                  {/* Basic Info Group */}
-                  <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormInput label="Nom du produit" icon={<Info size={16} />}>
-                      <input
-                        placeholder="ex. Vanne industrielle premium"
-                        className="custom-input dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-500"
-                        value={form.name}
-                        onChange={(e) =>
-                          setForm({ ...form, name: e.target.value })
-                        }
-                      />
-                    </FormInput>
-
-                    <FormInput label="Type d'actif" icon={<Layers size={16} />}>
-                      <select
-                        className="custom-input appearance-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
-                        value={form.type}
-                        onChange={(e) =>
-                          setForm({ ...form, type: e.target.value })
-                        }
-                      >
-                        <option value="material">Matière première</option>
-                        <option value="composite">Composite / Assemblage</option>
-                        <option value="service">Service</option>
-                      </select>
-                    </FormInput>
-                  </div>
-
-                  {/* Price & Tax Group */}
-                  <div className="bg-gray-50/50 dark:bg-slate-800/40 p-6 rounded-3xl border border-gray-100 dark:border-slate-700/50 grid grid-cols-1 gap-4">
-                    <FormInput
-                      label="Prix de vente de base"
-                      icon={<DollarSign size={16} />}
-                    >
-                      <input
-                        type="number"
-                        placeholder="0.00"
-                        className="custom-input dark:bg-slate-900 dark:border-slate-700 dark:text-white"
-                        value={form.sellingPrice}
-                        onChange={(e) =>
-                          setForm({ ...form, sellingPrice: e.target.value })
-                        }
-                      />
-                    </FormInput>
-
-                    <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-700">
-                      <div className="flex items-center gap-2">
-                        <Percent
-                          size={14}
-                          className="text-indigo-500 dark:text-indigo-400"
-                        />
-                        <span className="text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase">
-                          Taxe incluse
-                        </span>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="sr-only peer"
-                          checked={form.includeTax}
-                          onChange={(e) =>
-                            setForm({ ...form, includeTax: e.target.checked })
-                          }
-                        />
-                        <div className="w-10 h-5 bg-gray-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-slate-600 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600 dark:peer-checked:bg-indigo-500"></div>
-                      </label>
+          <AnimatePresence>
+            {showForm && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-xl shadow-gray-200/20 dark:shadow-none overflow-hidden transition-colors duration-300"
+              >
+                {/* Header Section */}
+                <div className="px-8 py-6 border-b border-gray-50 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-800/30 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-100 dark:shadow-none">
+                      {editingId ? <Edit3 size={20} /> : <Plus size={20} />}
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">
+                        {editingId
+                          ? "Modifier le produit existant"
+                          : "Créer un nouvel actif principal"}
+                      </h2>
+                      <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-tighter">
+                        Entrez les spécifications du produit ci-dessous
+                      </p>
                     </div>
                   </div>
 
-                  {/* Secondary Inputs */}
-                  <FormInput label="TVA" icon={<Percent size={16} />}>
-                    <select
-                      className="custom-input appearance-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
-                      value={form.vat}
-                      onChange={(e) =>
-                        setForm({ ...form, vat: e.target.value })
-                      }
+                  {editingId && (
+                    <button
+                      onClick={() => {
+                        setEditingId(null);
+                        setForm({
+                          name: "",
+                          type: "material",
+                          sellingPrice: "",
+                          includeTax: false,
+                          tax: "",
+                          vat: "",
+                          stock: 0,
+                          inStock: true,
+                          warehouse: "",
+                          category: "",
+                          brand: "",
+                          unit: "",
+                          description: "",
+                        });
+                      }}
+                      className="px-4 py-2 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-colors"
                     >
-                      <option value="">TVA</option>
-                      {vat && <option value={vat._id}>{vat.value}%</option>}
-                    </select>
-                  </FormInput>
-
-                  <FormInput label="Taxe" icon={<Percent size={16} />}>
-                    <select
-                      className="custom-input appearance-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
-                      value={form.tax}
-                      onChange={(e) =>
-                        setForm({ ...form, tax: e.target.value })
-                      }
-                    >
-                      <option value="">Aucune taxe</option>
-                      {taxes
-                        .filter((t) => t.name.toLowerCase() !== "timbre fiscal")
-                        .map((t) => (
-                          <option key={t._id} value={t._id}>
-                            {t.name}
-                          </option>
-                        ))}
-                    </select>
-                  </FormInput>
-
-                  <FormInput
-                    label="Emplacement de l'entrepôt"
-                    icon={<Warehouse size={16} />}
-                  >
-                    <select
-                      className="custom-input appearance-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
-                      value={form.warehouse}
-                      onChange={(e) =>
-                        setForm({ ...form, warehouse: e.target.value })
-                      }
-                    >
-                      <option value="">Inventaire global</option>
-                      {warehouses.map((w) => (
-                        <option key={w._id} value={w._id}>
-                          {w.name}
-                        </option>
-                      ))}
-                    </select>
-                  </FormInput>
-
-                  <FormInput label="Catégorie" icon={<Box size={16} />}>
-                    <select
-                      className="custom-input appearance-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
-                      value={form.category}
-                      onChange={(e) =>
-                        setForm({ ...form, category: e.target.value })
-                      }
-                    >
-                      <option value="">Non catégorisé</option>
-                      {categories.map((c) => (
-                        <option key={c._id} value={c._id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </FormInput>
-
-                  <FormInput label="Marque" icon={<Tag size={16} />}>
-                    <select
-                      className="custom-input appearance-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
-                      value={form.brand}
-                      onChange={(e) =>
-                        setForm({ ...form, brand: e.target.value })
-                      }
-                    >
-                      <option value="">OEM / Générique</option>
-                      {brands.map((b) => (
-                        <option key={b._id} value={b._id}>
-                          {b.name}
-                        </option>
-                      ))}
-                    </select>
-                  </FormInput>
-
-                  <FormInput
-                    label="Stock actuel"
-                    icon={<Activity size={16} />}
-                  >
-                    <input
-                      type="number"
-                      placeholder="Quantité"
-                      className="custom-input dark:bg-slate-800 dark:border-slate-700 dark:text-white"
-                      value={form.stock}
-                      onChange={(e) =>
-                        setForm({ ...form, stock: e.target.value })
-                      }
-                    />
-                  </FormInput>
-
-                  <FormInput
-                    label="Unité de mesure"
-                    icon={<Layers size={16} />}
-                  >
-                    <select
-                      className="custom-input appearance-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
-                      value={form.unit}
-                      onChange={(e) =>
-                        setForm({ ...form, unit: e.target.value })
-                      }
-                    >
-                      <option value="">N/A</option>
-                      {units.map((u) => (
-                        <option key={u._id} value={u._id}>
-                          {u.label}
-                        </option>
-                      ))}
-                    </select>
-                  </FormInput>
-
-                  {/* Dimension Group */}
-                  <FormInput
-                    label="Hauteur (cm)"
-                    icon={<ArrowUpDown size={16} />}
-                  >
-                    <input
-                      type="number"
-                      className="custom-input dark:bg-slate-800 dark:border-slate-700 dark:text-white"
-                      value={form.height}
-                      onChange={(e) =>
-                        setForm({ ...form, height: e.target.value })
-                      }
-                    />
-                  </FormInput>
-
-                  <FormInput
-                    label="Largeur (cm)"
-                    icon={<ArrowLeftRight size={16} />}
-                  >
-                    <input
-                      type="number"
-                      className="custom-input dark:bg-slate-800 dark:border-slate-700 dark:text-white"
-                      value={form.width}
-                      onChange={(e) =>
-                        setForm({ ...form, width: e.target.value })
-                      }
-                    />
-                  </FormInput>
-
-                  <FormInput label="Poids (kg)" icon={<Weight size={16} />}>
-                    <input
-                      type="number"
-                      className="custom-input dark:bg-slate-800 dark:border-slate-700 dark:text-white"
-                      value={form.weight}
-                      onChange={(e) =>
-                        setForm({ ...form, weight: e.target.value })
-                      }
-                    />
-                  </FormInput>
-
-                  <FormInput
-                    label="Description détaillée"
-                    icon={<Briefcase size={16} />}
-                    className="md:col-span-3"
-                  >
-                    <textarea
-                      placeholder="Entrez les spécifications techniques..."
-                      className="custom-input min-h-[100px] resize-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
-                      value={form.description}
-                      onChange={(e) =>
-                        setForm({ ...form, description: e.target.value })
-                      }
-                    />
-                  </FormInput>
+                      Annuler la modification
+                    </button>
+                  )}
                 </div>
 
-                {/* Submit Button */}
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    className="w-full md:w-auto bg-slate-900 dark:bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-600 dark:hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-100/50 dark:shadow-none flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
-                  >
-                    {editingId ? (
-                      <CheckCircle2 size={18} />
-                    ) : (
-                      <Plus size={18} />
-                    )}
-                    {editingId ? "Valider les modifications" : "Enregistrer le produit"}
-                  </button>
+                <div className="p-8 lg:p-10">
+                  <form onSubmit={handleSubmit} className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6 min-w-0">
+                      {/* Basic Info Group */}
+                      <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormInput
+                          label="Nom du produit"
+                          icon={<Info size={16} />}
+                        >
+                          <input
+                            placeholder="ex. Vanne industrielle premium"
+                            className="custom-input dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-500"
+                            value={form.name}
+                            onChange={(e) =>
+                              setForm({ ...form, name: e.target.value })
+                            }
+                          />
+                        </FormInput>
+
+                        <FormInput
+                          label="Type d'actif"
+                          icon={<Layers size={16} />}
+                        >
+                          <select
+                            className="custom-input appearance-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                            value={form.type}
+                            onChange={(e) =>
+                              setForm({ ...form, type: e.target.value })
+                            }
+                          >
+                            <option value="material">Matière première</option>
+                            <option value="composite">
+                              Composite / Assemblage
+                            </option>
+                            <option value="service">Service</option>
+                          </select>
+                        </FormInput>
+                      </div>
+
+                      {/* Price & Tax Group */}
+                      <div className="bg-gray-50/50 dark:bg-slate-800/40 p-6 rounded-3xl border border-gray-100 dark:border-slate-700/50 grid grid-cols-1 gap-4">
+                        <FormInput
+                          label="Prix de vente de base"
+                          icon={<DollarSign size={16} />}
+                        >
+                          <input
+                            type="number"
+                            placeholder="0.00"
+                            className="custom-input dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                            value={form.sellingPrice}
+                            onChange={(e) =>
+                              setForm({ ...form, sellingPrice: e.target.value })
+                            }
+                          />
+                        </FormInput>
+
+                        <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-700">
+                          <div className="flex items-center gap-2">
+                            <Percent
+                              size={14}
+                              className="text-indigo-500 dark:text-indigo-400"
+                            />
+                            <span className="text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase">
+                              Taxe incluse
+                            </span>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={form.includeTax}
+                              onChange={(e) =>
+                                setForm({
+                                  ...form,
+                                  includeTax: e.target.checked,
+                                })
+                              }
+                            />
+                            <div className="w-10 h-5 bg-gray-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-slate-600 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600 dark:peer-checked:bg-indigo-500"></div>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Secondary Inputs */}
+                      <FormInput label="TVA" icon={<Percent size={16} />}>
+                        <select
+                          className="custom-input appearance-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                          value={form.vat}
+                          onChange={(e) =>
+                            setForm({ ...form, vat: e.target.value })
+                          }
+                        >
+                          <option value="">TVA</option>
+                          {vat && <option value={vat._id}>{vat.value}%</option>}
+                        </select>
+                      </FormInput>
+
+                      <FormInput label="Taxe" icon={<Percent size={16} />}>
+                        <select
+                          className="custom-input appearance-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                          value={form.tax}
+                          onChange={(e) =>
+                            setForm({ ...form, tax: e.target.value })
+                          }
+                        >
+                          <option value="">Aucune taxe</option>
+                          {taxes
+                            .filter(
+                              (t) => t.name.toLowerCase() !== "timbre fiscal",
+                            )
+                            .map((t) => (
+                              <option key={t._id} value={t._id}>
+                                {t.name}
+                              </option>
+                            ))}
+                        </select>
+                      </FormInput>
+
+                      <FormInput
+                        label="Emplacement de l'entrepôt"
+                        icon={<Warehouse size={16} />}
+                      >
+                        <select
+                          className="custom-input appearance-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                          value={form.warehouse}
+                          onChange={(e) =>
+                            setForm({ ...form, warehouse: e.target.value })
+                          }
+                        >
+                          <option value="">Inventaire global</option>
+                          {warehouses.map((w) => (
+                            <option key={w._id} value={w._id}>
+                              {w.name}
+                            </option>
+                          ))}
+                        </select>
+                      </FormInput>
+
+                      <FormInput label="Catégorie" icon={<Box size={16} />}>
+                        <select
+                          className="custom-input appearance-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                          value={form.category}
+                          onChange={(e) =>
+                            setForm({ ...form, category: e.target.value })
+                          }
+                        >
+                          <option value="">Non catégorisé</option>
+                          {categories.map((c) => (
+                            <option key={c._id} value={c._id}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      </FormInput>
+
+                      <FormInput label="Marque" icon={<Tag size={16} />}>
+                        <select
+                          className="custom-input appearance-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                          value={form.brand}
+                          onChange={(e) =>
+                            setForm({ ...form, brand: e.target.value })
+                          }
+                        >
+                          <option value="">OEM / Générique</option>
+                          {brands.map((b) => (
+                            <option key={b._id} value={b._id}>
+                              {b.name}
+                            </option>
+                          ))}
+                        </select>
+                      </FormInput>
+
+                      <FormInput
+                        label="Stock actuel"
+                        icon={<Activity size={16} />}
+                      >
+                        <input
+                          type="number"
+                          placeholder="Quantité"
+                          className="custom-input dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                          value={form.stock}
+                          onChange={(e) =>
+                            setForm({ ...form, stock: e.target.value })
+                          }
+                        />
+                      </FormInput>
+
+                      <FormInput
+                        label="Unité de mesure"
+                        icon={<Layers size={16} />}
+                      >
+                        <select
+                          className="custom-input appearance-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                          value={form.unit}
+                          onChange={(e) =>
+                            setForm({ ...form, unit: e.target.value })
+                          }
+                        >
+                          <option value="">N/A</option>
+                          {units.map((u) => (
+                            <option key={u._id} value={u._id}>
+                              {u.label}
+                            </option>
+                          ))}
+                        </select>
+                      </FormInput>
+
+                      {/* Dimension Group */}
+                      <FormInput
+                        label="Hauteur (cm)"
+                        icon={<ArrowUpDown size={16} />}
+                      >
+                        <input
+                          type="number"
+                          className="custom-input dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                          value={form.height}
+                          onChange={(e) =>
+                            setForm({ ...form, height: e.target.value })
+                          }
+                        />
+                      </FormInput>
+
+                      <FormInput
+                        label="Largeur (cm)"
+                        icon={<ArrowLeftRight size={16} />}
+                      >
+                        <input
+                          type="number"
+                          className="custom-input dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                          value={form.width}
+                          onChange={(e) =>
+                            setForm({ ...form, width: e.target.value })
+                          }
+                        />
+                      </FormInput>
+
+                      <FormInput label="Poids (kg)" icon={<Weight size={16} />}>
+                        <input
+                          type="number"
+                          className="custom-input dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                          value={form.weight}
+                          onChange={(e) =>
+                            setForm({ ...form, weight: e.target.value })
+                          }
+                        />
+                      </FormInput>
+
+                      <FormInput
+                        label="Description détaillée"
+                        icon={<Briefcase size={16} />}
+                        className="md:col-span-3"
+                      >
+                        <textarea
+                          placeholder="Entrez les spécifications techniques..."
+                          className="custom-input min-h-[100px] resize-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                          value={form.description}
+                          onChange={(e) =>
+                            setForm({ ...form, description: e.target.value })
+                          }
+                        />
+                      </FormInput>
+                    </div>
+
+                    {/* Submit Button */}
+                    <div className="flex justify-end">
+                      <button
+                        type="submit"
+                        className="w-full md:w-auto bg-slate-900 dark:bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-600 dark:hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-100/50 dark:shadow-none flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
+                      >
+                        {editingId ? (
+                          <CheckCircle2 size={18} />
+                        ) : (
+                          <Plus size={18} />
+                        )}
+                        {editingId
+                          ? "Valider les modifications"
+                          : "Enregistrer le produit"}
+                      </button>
+                    </div>
+                  </form>
                 </div>
-              </form>
-            </div>
-          </motion.div>
-  {/* /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
-          {/* Section liste des produits */}
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {/* /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
+          {/* Section liste des produits — TABLE VERSION */}
           <div className="space-y-6">
             <div className="flex items-center justify-between px-2">
               <div className="flex items-center gap-3">
@@ -660,94 +696,135 @@ const ProductDashboard = () => {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <AnimatePresence>
-                {currentProducts.length === 0 ? (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="col-span-full flex flex-col items-center justify-center py-32 dark:bg-gray-900 bg-white rounded-[2.5rem] border-2 border-dashed dark:border-gray-800 border-gray-100"
-                  >
-                    <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
-                      <AlertCircle size={32} className="text-gray-900" />
-                    </div>
-                    <p className="text-sm font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest">
-                      Aucune entrée ne correspond à votre recherche
-                    </p>
-                  </motion.div>
-                ) : (
-                  currentProducts.map((p) => (
-                    <motion.div
-                      layout
-                      key={p._id}
-                      initial={{ opacity: 0, scale: 0.98 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.98 }}
-                      className={`group relative p-6 rounded-[2rem] border transition-all duration-300 ${
-                        p.inStock
-                          ? "bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-indigo-100 dark:hover:border-indigo-900 hover:shadow-2xl hover:shadow-indigo-500/5"
-                          : "bg-gray-50/50 border-transparent opacity-80"
-                      }`}
-                    >
-                      <div className="flex items-start gap-5">
-                        <div
-                          className={`w-14 h-14 rounded-[1.25rem] flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${
+            {/* Table wrapper */}
+            <div className="overflow-x-auto rounded-[2rem] border border-gray-100 dark:border-gray-800">
+              {currentProducts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-32 bg-white dark:bg-gray-900">
+                  <div className="w-20 h-20 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6">
+                    <AlertCircle
+                      size={32}
+                      className="text-gray-900 dark:text-gray-300"
+                    />
+                  </div>
+                  <p className="text-sm font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest">
+                    Aucune entrée ne correspond à votre recherche
+                  </p>
+                </div>
+              ) : (
+                <table className="w-full border-collapse bg-white dark:bg-gray-900">
+                  <thead>
+                    <tr className="border-b border-gray-100 dark:border-gray-800">
+                      {[
+                        "Produit",
+                        "Statut",
+                        "Type",
+                        "Prix du marché",
+                        "Après TVA",
+                        "Taxes & TVA",
+                        "",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          className="px-5 py-4 text-left text-[9px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-600 whitespace-nowrap"
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <AnimatePresence>
+                      {currentProducts.map((p) => (
+                        <motion.tr
+                          layout
+                          key={p._id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className={`group border-b last:border-b-0 border-gray-50 dark:border-gray-800 transition-colors duration-200 ${
                             p.inStock
-                              ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600"
-                              : "bg-gray-200 text-gray-500"
+                              ? "hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10"
+                              : "opacity-70"
                           }`}
                         >
-                          <Package size={24} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase truncate max-w-[150px]">
-                              {p.name}
-                            </h4>
-                            <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 bg-gray-50 px-2 py-1 rounded-lg uppercase tracking-tighter">
-                              #{p._id?.slice(-4) || "SKU"}
-                            </span>
-                          </div>
+                          {/* Produit */}
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`w-10 h-10 rounded-[14px] flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${
+                                  p.inStock
+                                    ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400"
+                                    : "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                                }`}
+                              >
+                                <Package size={18} />
+                              </div>
+                              <div>
+                                <p className="text-[11px] font-black text-gray-900 dark:text-white uppercase tracking-tight max-w-[130px] truncate">
+                                  {p.name}
+                                </p>
+                                <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800 px-2 py-0.5 rounded-lg uppercase tracking-tighter inline-block mt-0.5">
+                                  #{p._id?.slice(-4) || "SKU"}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
 
-                          <div className="flex flex-wrap items-center gap-3 mt-3">
-                            <div
-                              className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+                          {/* Statut */}
+                          <td className="px-5 py-4">
+                            <span
+                              className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border inline-block ${
                                 p.inStock
                                   ? "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20"
                                   : "bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20"
                               }`}
                             >
-                              {p.inStock ? `Stock : ${p.stock}` : "Alerte de stock"}
-                            </div>
+                              {p.inStock
+                                ? `Stock : ${p.stock}`
+                                : "Alerte de stock"}
+                            </span>
+                          </td>
 
-                            <div className="px-3 py-1 rounded-full bg-gray-50 text-gray-500 border border-gray-100 text-[9px] font-black uppercase tracking-widest dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700">
+                          {/* Type */}
+                          <td className="px-5 py-4">
+                            <span className="px-3 py-1 rounded-full bg-gray-50 text-gray-500 border border-gray-100 text-[9px] font-black uppercase tracking-widest dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700 inline-block">
                               {p.type}
-                            </div>
-                          </div>
+                            </span>
+                          </td>
 
-                          <div className="mt-5 pt-5 border-t border-gray-50 flex items-center justify-between">
-                            <div className="flex flex-col">
-                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">
-                                Prix du marché
-                              </span>
-                              <span className="font-bold text-gray-800 dark:text-gray-200">
-                                {p.price} TND
-                              </span>
-                              <span className="text-[10px] font-bold text-indigo-600 mt-0.5">
-                                Après TVA : {calculateFinalPrice(p)} TND
-                              </span>
-                              <span className="text-[10px] font-bold text-indigo-600 mt-0.5">
-                                Après taxes et TVA : {p.priceWithTax} TND
-                              </span>
-                            </div>
+                          {/* Prix */}
+                          <td className="px-5 py-4">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-0.5">
+                              Prix
+                            </span>
+                            <span className="font-bold text-gray-800 dark:text-gray-200">
+                              {p.price} TND
+                            </span>
+                          </td>
 
+                          {/* Après TVA */}
+                          <td className="px-5 py-4">
+                            <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
+                              {calculateFinalPrice(p)} TND
+                            </span>
+                          </td>
+
+                          {/* Taxes & TVA */}
+                          <td className="px-5 py-4">
+                            <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
+                              {p.priceWithTax} TND
+                            </span>
+                          </td>
+
+                          {/* Actions */}
+                          <td className="px-5 py-4">
                             <div className="flex items-center gap-1.5 translate-x-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
                               <button
                                 onClick={() => startEdit(p)}
-                                className="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                                className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-colors"
                                 title="Modification rapide"
                               >
-                                <Edit3 size={18} />
+                                <Edit3 size={16} />
                               </button>
                               <button
                                 onClick={async () => {
@@ -760,19 +837,19 @@ const ProductDashboard = () => {
                                     fetchProducts();
                                   }
                                 }}
-                                className="p-2.5 text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+                                className="p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-colors"
                                 title="Supprimer"
                               >
-                                <Trash2 size={18} />
+                                <Trash2 size={16} />
                               </button>
                             </div>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))
-                )}
-              </AnimatePresence>
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </AnimatePresence>
+                  </tbody>
+                </table>
+              )}
             </div>
 
             {/* Pagination */}
@@ -798,7 +875,6 @@ const ProductDashboard = () => {
                   >
                     <ChevronLeft size={20} />
                   </button>
-
                   <button
                     onClick={() =>
                       setCurrentPage((p) => Math.min(totalPages, p + 1))

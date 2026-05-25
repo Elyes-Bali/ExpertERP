@@ -15,6 +15,7 @@ import {
   Download,
   Package,
   Layers,
+  X,
 } from "lucide-react";
 
 // --- STORE IMPORTS ---
@@ -45,6 +46,7 @@ const SupplierInvoiceDashboard = () => {
 
   const [productSearch, setProductSearch] = useState({});
   const [items, setItems] = useState([]);
+  const [showForm, setShowForm] = useState(false); // ← NEW
   const [form, setForm] = useState({
     supplier: "",
     date: "",
@@ -83,6 +85,7 @@ const SupplierInvoiceDashboard = () => {
     await createInvoice(formData);
     setItems([]);
     setForm({ supplier: "", date: "", warehouse: "", project: "", note: "" });
+    setShowForm(false); // ← close after submit
     fetchInvoices();
   };
 
@@ -114,7 +117,7 @@ const SupplierInvoiceDashboard = () => {
   );
 
   return (
-  <div className="flex flex-col lg:flex-row min-h-screen bg-[#FDFDFE] dark:bg-gray-950 transition-colors duration-300">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-[#FDFDFE] dark:bg-gray-950 transition-colors duration-300">
       <CompanySidebar
         activeItem="Factures"
         isOpen={isSidebarOpen}
@@ -142,22 +145,35 @@ const SupplierInvoiceDashboard = () => {
               </div>
             </div>
           </div>
-
-          <div className="relative hidden md:block">
-            <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500"
-              size={16}
-            />
-            <input
-              type="text"
-              placeholder="Rechercher une référence..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="pl-11 pr-4 py-2.5 bg-gray-50/50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700 rounded-2xl text-sm font-medium text-gray-900 dark:text-white focus:ring-4 focus:ring-indigo-500/5 outline-none w-72 transition-all"
-            />
+          <div className="flex items-center gap-4">
+            <div className="relative hidden md:block">
+              <Search
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500"
+                size={16}
+              />
+              <input
+                type="text"
+                placeholder="Rechercher une référence..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="pl-11 pr-4 py-2.5 bg-gray-50/50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700 rounded-2xl text-sm font-medium text-gray-900 dark:text-white focus:ring-4 focus:ring-indigo-500/5 outline-none w-72 transition-all"
+              />
+            </div>
+            {/* TOGGLE FORM BUTTON */}
+            <button
+              onClick={() => setShowForm((prev) => !prev)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg ${
+                showForm
+                  ? "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 shadow-none"
+                  : "bg-indigo-600 text-white shadow-indigo-100 dark:shadow-none hover:bg-indigo-700"
+              }`}
+            >
+              {showForm ? <X size={14} /> : <Plus size={14} />}
+              {showForm ? "Annuler" : "Nouvelle facture"}
+            </button>
           </div>
         </header>
 
@@ -188,6 +204,8 @@ const SupplierInvoiceDashboard = () => {
           </div>
 
           {/* FORM */}
+            <AnimatePresence>
+                      {showForm && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -208,7 +226,6 @@ const SupplierInvoiceDashboard = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="p-8 lg:p-10 space-y-10">
-
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 <FormGroup
                   label="Sélectionner le fournisseur"
@@ -236,7 +253,10 @@ const SupplierInvoiceDashboard = () => {
                   </select>
                 </FormGroup>
 
-                <FormGroup label="Date de facture" icon={<Calendar size={14} />}>
+                <FormGroup
+                  label="Date de facture"
+                  icon={<Calendar size={14} />}
+                >
                   <input
                     type="date"
                     className={baseInput}
@@ -292,7 +312,10 @@ const SupplierInvoiceDashboard = () => {
                 </FormGroup>
               </div>
 
-              <FormGroup label="Notes / Conditions" icon={<FileText size={14} />}>
+              <FormGroup
+                label="Notes / Conditions"
+                icon={<FileText size={14} />}
+              >
                 <textarea
                   rows="2"
                   className={`${baseInput} resize-none`}
@@ -317,7 +340,7 @@ const SupplierInvoiceDashboard = () => {
                 </div>
 
                 <div className="space-y-3">
-                  <AnimatePresence >
+                  <AnimatePresence>
                     {items.map((item, index) => (
                       <motion.div
                         key={index}
@@ -425,6 +448,8 @@ const SupplierInvoiceDashboard = () => {
               </div>
             </form>
           </motion.div>
+          )}
+          </AnimatePresence>
 
           {/* INVOICE INDEX */}
           <div className="space-y-6">
@@ -444,113 +469,170 @@ const SupplierInvoiceDashboard = () => {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <AnimatePresence>
-                  {currentInvoices.map((inv) => (
-                    <motion.div
-                      key={inv._id}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 hover:shadow-2xl dark:hover:shadow-none transition-all flex flex-col justify-between group"
-                    >
-                      <div>
-                        <div className="flex justify-between items-start mb-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                              <FileText size={20} />
-                            </div>
-                            <div>
-                              <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase">
-                                RÉF-FACT
+              <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-gray-100 dark:border-slate-800 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-100 dark:border-slate-800">
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                          Fournisseur
+                        </th>
+
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                          Date
+                        </th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                          Articles
+                        </th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                          Sous-total
+                        </th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                          TVA
+                        </th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                          Taxes
+                        </th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                          Timbre
+                        </th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                          Total
+                        </th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                          Statut
+                        </th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <AnimatePresence>
+                        {currentInvoices.map((inv, index) => (
+                          <motion.tr
+                            key={inv._id}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.03 }}
+                            className="border-b border-gray-50 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors group"
+                          >
+                            {/* Fournisseur */}
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                                  <FileText size={16} />
+                                </div>
+                                <div>
+                                  <p className="text-[9px] font-black text-gray-400 dark:text-slate-500 uppercase">
+                                    RÉF-FACT
+                                  </p>
+                                  <p className="text-xs font-black text-gray-900 dark:text-white uppercase truncate max-w-[120px]">
+                                    {inv.supplier?.name || "Fournisseur"}
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Date */}
+                            <td className="px-6 py-4">
+                              <p className="text-[11px] font-bold text-gray-800 dark:text-slate-200 whitespace-nowrap">
+                                {new Date(inv.date).toLocaleDateString()}
+                              </p>
+                            </td>
+
+                            {/* Articles */}
+                            <td className="px-6 py-4 max-w-[180px]">
+                              <div className="space-y-1">
+                                {inv.items.slice(0, 2).map((item, i) => (
+                                  <div
+                                    key={i}
+                                    className="flex items-center justify-between gap-2"
+                                  >
+                                    <span className="text-[10px] font-medium text-gray-500 dark:text-slate-400 truncate">
+                                      • {item.name}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-gray-800 dark:text-slate-300 whitespace-nowrap shrink-0">
+                                      {item.total?.toFixed(2)} TND
+                                    </span>
+                                  </div>
+                                ))}
+                                {inv.items.length > 2 && (
+                                  <p className="text-[9px] text-gray-400 italic">
+                                    +{inv.items.length - 2} autres
+                                  </p>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Sous-total */}
+                            <td className="px-6 py-4">
+                              <p className="text-[11px] font-bold text-gray-800 dark:text-slate-200 whitespace-nowrap">
+                                {inv.subtotal} TND
+                              </p>
+                            </td>
+
+                            {/* TVA */}
+                            <td className="px-6 py-4">
+                              <p className="text-[11px] font-bold text-gray-800 dark:text-slate-200 whitespace-nowrap">
+                                {inv.totalVAT} TND
+                              </p>
+                            </td>
+
+                            {/* Taxes */}
+                            <td className="px-6 py-4">
+                              <p className="text-[11px] font-bold text-gray-800 dark:text-slate-200 whitespace-nowrap">
+                                {inv.totalTaxes} TND
+                              </p>
+                            </td>
+
+                            {/* Timbre */}
+                            <td className="px-6 py-4">
+                              <p className="text-[11px] font-bold text-gray-800 dark:text-slate-200 whitespace-nowrap">
+                                {inv.timbreFiscal} TND
+                              </p>
+                            </td>
+
+                            {/* Total */}
+                            <td className="px-6 py-4">
+                              <p className="text-sm font-black text-gray-900 dark:text-white tracking-tighter whitespace-nowrap">
+                                {inv.netPay?.toFixed(3)} TND
+                              </p>
+                            </td>
+
+                            {/* Statut */}
+                            <td className="px-6 py-4">
+                              <span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-widest whitespace-nowrap">
+                                Finalisé
                               </span>
-                              <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase truncate max-w-[150px]">
-                                {inv.supplier?.name || "Fournisseur"}
-                              </h4>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => downloadPDF(inv._id)}
-                              className="p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors"
-                            >
-                              <Download size={14} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteInvoice(inv._id)}
-                              className="p-2 bg-rose-500 text-white rounded-xl hover:bg-rose-600 transition-colors"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </div>
+                            </td>
 
-                        <div className="grid grid-cols-2 gap-4 mb-6">
-                          <div>
-                            <p className="text-[9px] font-black text-gray-400 uppercase mb-1">
-                              Projet
-                            </p>
-                            <p className="text-[11px] font-bold text-gray-800 dark:text-slate-200 uppercase">
-                              {inv.project?.name || "Standard"}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-[9px] font-black text-gray-400 uppercase mb-1">
-                              Date
-                            </p>
-                            <p className="text-[11px] font-bold text-gray-800 dark:text-slate-200">
-                              {new Date(inv.date).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2 border-t border-gray-50 dark:border-slate-800 pt-4">
-                          {inv.items.slice(0, 3).map((item, i) => (
-                            <div
-                              key={i}
-                              className="flex justify-between items-center text-[11px] font-medium text-gray-500 dark:text-slate-400"
-                            >
-                              <span className="truncate max-w-[60%]">
-                                • {item.name}
-                              </span>
-                              <span className="font-bold text-gray-800 dark:text-slate-300">
-                                {item.total?.toFixed(2)} TND
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="mt-8 pt-6 border-t-2 border-dashed border-gray-50 dark:border-slate-800 flex items-center justify-between">
-                        <div>
-                          <p className="text-[10px] font-black text-gray-400 uppercase">
-                            Sous-total: {inv.subtotal} TND
-                          </p>
-                          <p className="text-[10px] font-black text-gray-400 uppercase">
-                            TVA totale: {inv.totalVAT} TND
-                          </p>
-                          <p className="text-[10px] font-black text-gray-400 uppercase">
-                            Taxes: {inv.totalTaxes} TND
-                          </p>
-                          <p className="text-[10px] font-black text-gray-400 uppercase">
-                            Timbre fiscal: {inv.timbreFiscal} TND
-                          </p>
-
-                          <p className="text-[10px] font-black text-gray-400 uppercase">
-                            Total à payer
-                          </p>
-                          <p className="text-xl font-black text-gray-900 dark:text-white tracking-tighter">
-                            {inv.netPay?.toFixed(3)} TND
-                          </p>
-                        </div>
-                        <div className="px-4 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-widest">
-                          Finalisé
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                            {/* Actions */}
+                            <td className="px-6 py-4">
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => downloadPDF(inv._id)}
+                                  className="p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors"
+                                >
+                                  <Download size={14} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteInvoice(inv._id)}
+                                  className="p-2 bg-rose-500 text-white rounded-xl hover:bg-rose-600 transition-colors"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </td>
+                          </motion.tr>
+                        ))}
+                      </AnimatePresence>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
+
             {/* PAGINATION */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between bg-white dark:bg-slate-900 px-8 py-5 rounded-3xl border border-gray-100 dark:border-slate-800">
