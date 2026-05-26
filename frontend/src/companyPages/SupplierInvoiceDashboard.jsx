@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 // --- STORE IMPORTS ---
-import { useInvoiceStore } from "../store/supplierInvoiceStore";
+import { useSupplierInvoiceStore } from "../store/supplierInvoiceStore";
 import { useSupplierStore } from "../store/supplierStore";
 import { useProductStore } from "../store/productStore";
 import { useWarehouseStore } from "../store/warehouseStore";
@@ -37,7 +37,7 @@ const SupplierInvoiceDashboard = () => {
     createInvoice,
     downloadPDF,
     deleteInvoice,
-  } = useInvoiceStore();
+  } = useSupplierInvoiceStore();
 
   const { suppliers = [], fetchSuppliers } = useSupplierStore();
   const { products = [], fetchProducts } = useProductStore();

@@ -125,7 +125,7 @@ const SupplierDashboard = () => {
 
       <main className="flex-1 flex flex-col min-w-0">
         {/* EN-TÊTE */}
-        <header className="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-100 dark:border-slate-800 flex items-center justify-between px-6 lg:px-10 sticky top-0 z-40">
+        <header className="h-20 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-6 lg:px-10 sticky top-0 z-40">
           <div className="flex items-center gap-5">
             <button
               onClick={() => setIsSidebarOpen(true)}
@@ -162,7 +162,7 @@ const SupplierDashboard = () => {
                 className="pl-11 pr-4 py-2.5 bg-gray-50/50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700 rounded-2xl text-sm font-medium focus:ring-4 focus:ring-blue-500/5 dark:focus:ring-blue-500/10 focus:bg-white dark:focus:bg-slate-800 outline-none w-72 transition-all text-gray-900 dark:text-slate-100"
               />
             </div>
-          </div>
+        
           {/* TOGGLE FORM BUTTON */}
           <button
             onClick={() => setShowForm((prev) => !prev)}
@@ -175,6 +175,7 @@ const SupplierDashboard = () => {
             {showForm ? <X size={14} /> : <Plus size={14} />}
             {showForm ? "Annuler" : "Nouveau fournisseur"}
           </button>
+            </div>
         </header>
 
         <div className="p-6 lg:p-10 max-w-7xl mx-auto w-full space-y-10">

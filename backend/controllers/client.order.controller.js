@@ -14,6 +14,7 @@ import { Transaction } from "../models/transaction.model.js";
 import { CompteFinancier } from "../models/compte.financier.model.js";
 import { getCompanyId } from "../utils/getCompanyId.js";
 import { User } from "../models/user.model.js";
+import { logAction } from "../utils/auditLogger.js";
 // 🔹 Get company
 // const getCompanyId = async (userId) => {
 //   const company = await Company.findOne({ user: userId });
@@ -214,75 +215,6 @@ export const getClientOrders = async (req, res) => {
 
 // ================= UPDATE =================
 
-// export const updateClientOrderStatus = async (req, res) => {
-//   try {
-//     const { isPaid } = req.body;
-
-//     const order = await ClientOrder.findById(req.params.id);
-
-//     if (!order) {
-//       return res.status(404).json({ message: "Client order not found" });
-//     }
-
-//     // 🔥 detect transition
-//     const wasPaid = order.isPaid;
-
-//     // update status
-//     order.isPaid = isPaid;
-//     await order.save();
-
-//     // 🔥 get compte once (reuse it)
-//     const compte = await CompteFinancier.findOne({
-//       company: order.company,
-//     });
-
-//     if (!compte) {
-//       return res.status(400).json({ message: "No financial account found" });
-//     }
-
-//     // ✅ CASE 1: NOT PAID → PAID (money IN)
-//     if (!wasPaid && isPaid) {
-//       // update balance
-//       compte.currentBalance += order.netPay;
-//       await compte.save();
-
-//       // transaction history
-//       await Transaction.create({
-//         company: order.company,
-//         compte: compte._id,
-//         type: "IN",
-//         amount: order.netPay,
-//         source: "ClientOrder",
-//         sourceId: order._id,
-//         description: `Payment received for order ${order.orderNumber}`,
-//       });
-//     }
-
-//     // ✅ CASE 2: PAID → NOT PAID (reverse = money OUT)
-//     if (wasPaid && !isPaid) {
-//       compte.currentBalance -= order.netPay;
-//       await compte.save();
-
-//       await Transaction.create({
-//         company: order.company,
-//         compte: compte._id,
-//         type: "OUT",
-//         amount: order.netPay,
-//         source: "ClientOrder",
-//         sourceId: order._id,
-//         description: `Payment reversed for order ${order.orderNumber}`,
-//       });
-//     }
-
-//     const populatedOrder = await ClientOrder.findById(order._id).populate(
-//       "customer warehouse project"
-//     );
-
-//     res.json(populatedOrder);
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// };
 export const updateClientOrderStatus = async (req, res) => {
   try {
     const { isPaid, isCanceled } = req.body;
@@ -421,9 +353,60 @@ export const updateClientOrderStatus = async (req, res) => {
 };
 
 // ================= DELETE =================
+// export const deleteClientOrder = async (req, res) => {
+//   await ClientOrder.findByIdAndDelete(req.params.id);
+//   res.json({ message: "Deleted" });
+// };
+
 export const deleteClientOrder = async (req, res) => {
-  await ClientOrder.findByIdAndDelete(req.params.id);
-  res.json({ message: "Deleted" });
+  try {
+    // 1. GET ORDER FIRST (CRITICAL FOR AUDIT + STOCK LOGIC)
+    const companyId = await getCompanyId(req.userId); 
+    const order = await ClientOrder.findById(req.params.id).populate(
+      "items.product"
+    );
+
+    if (!order) {
+      return res.status(404).json({ message: "Client order not found" });
+    }
+
+    // 2. RESTORE STOCK (VERY IMPORTANT IN ERP)
+    for (const item of order.items) {
+      const product = await Product.findById(item.product._id);
+
+      if (product) {
+        product.stock += item.quantity;
+        product.inStock = product.stock > 0;
+        await product.save();
+      }
+    }
+
+    // 3. DELETE ORDER
+    
+    await ClientOrder.findByIdAndDelete(req.params.id);
+
+    // 4. AUDIT LOG
+    await logAction({
+      req,
+      companyId,
+      user: req.userId,
+      action: "DELETE",
+      entity: "ClientOrder",
+      entityId: order._id,
+      before: {
+        orderNumber: order.orderNumber,
+        customer: order.customer,
+        netPay: order.netPay,
+        itemsCount: order.items?.length,
+      },
+      message: `Client order ${order.orderNumber} deleted`,
+    });
+
+    res.json({ message: "Deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
 };
 
 export const downloadClientOrderPDF = async (req, res) => {

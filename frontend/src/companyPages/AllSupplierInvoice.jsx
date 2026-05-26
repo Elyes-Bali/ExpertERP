@@ -15,7 +15,7 @@ import {
   Filter,
 } from "lucide-react";
 
-import { useInvoiceStore } from "../store/supplierInvoiceStore";
+import { useSupplierInvoiceStore } from "../store/supplierInvoiceStore";
 import CompanySidebar from "./CompanySidebar";
 
 const AllSupplierInvoice = () => {
@@ -25,7 +25,7 @@ const AllSupplierInvoice = () => {
     deleteInvoice,
     updateInvoiceStatus,
     downloadPDF,
-  } = useInvoiceStore();
+  } = useSupplierInvoiceStore();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 

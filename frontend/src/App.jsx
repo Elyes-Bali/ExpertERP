@@ -58,6 +58,9 @@ import InternetClientDashboard from "./companyPages/InternetClientDashboard";
 import InternetPayment from "./companyPages/InternetPayment";
 import LanguageSwitcher from "./components/LanguageSwitcher";
 import NoteDashboard from "./companyPages/NoteDashboard";
+import PaidTransactions from "./companyPages/PaidTransactions";
+import BIDashboardBuilder from "./companyPages/BIDashboardBuilder";
+import AuditLogs from "./companyPages/AuditLogs";
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, user } = useAuthStore();
 
@@ -406,6 +409,31 @@ function App() {
           element={
             <ProtectedRoute>
               <NoteDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/All-Transactions"
+          element={
+            <ProtectedRoute>
+              <PaidTransactions />
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/BI-Analytics"
+          element={
+            <ProtectedRoute>
+              <BIDashboardBuilder />
+            </ProtectedRoute>
+          }
+        />
+
+         <Route
+          path="/Audit-Logs"
+          element={
+            <ProtectedRoute>
+              <AuditLogs />
             </ProtectedRoute>
           }
         />

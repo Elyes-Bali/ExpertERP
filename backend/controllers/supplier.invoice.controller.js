@@ -12,6 +12,7 @@ import puppeteer from "puppeteer";
 import { supplierInvoiceTemplate } from "../templates/supplierInvoiceTemplate.js";
 import { getCompanyId } from "../utils/getCompanyId.js";
 import { User } from "../models/user.model.js";
+import { logAction } from "../utils/auditLogger.js";
 // 🔹 Get company
 // const getCompanyId = async (userId) => {
 //   const company = await Company.findOne({ user: userId });
@@ -213,9 +214,64 @@ export const updateInvoiceStatus = async (req, res) => {
 };
 
 // ================= DELETE =================
+// export const deleteInvoice = async (req, res) => {
+//   await SInvoice.findByIdAndDelete(req.params.id);
+//   res.json({ message: "Deleted" });
+// };
+
 export const deleteInvoice = async (req, res) => {
-  await SInvoice.findByIdAndDelete(req.params.id);
-  res.json({ message: "Deleted" });
+  try {
+    // 1. GET INVOICE FIRST (IMPORTANT)
+    const companyId = await getCompanyId(req.userId); 
+    const invoice = await SInvoice.findById(req.params.id).populate(
+      "items.product"
+    );
+
+    if (!invoice) {
+      return res.status(404).json({ message: "Supplier invoice not found" });
+    }
+
+    // 2. REVERSE STOCK (ERP CRITICAL LOGIC)
+    for (const item of invoice.items) {
+      const product = await Product.findById(item.product._id);
+
+      if (product) {
+        // supplier invoice = stock was increased → now reverse it
+        product.stock -= item.quantity;
+
+        if (product.stock < 0) product.stock = 0; // safety guard
+
+        product.inStock = product.stock > 0;
+
+        await product.save();
+      }
+    }
+
+    // 3. DELETE INVOICE
+    await SInvoice.findByIdAndDelete(req.params.id);
+
+    // 4. AUDIT LOG
+    await logAction({
+      req,
+      user: req.userId,
+      companyId,
+      action: "DELETE",
+      entity: "SupplierInvoice",
+      entityId: invoice._id,
+      before: {
+        invoiceNumber: invoice.invoiceNumber,
+        supplier: invoice.supplier,
+        netPay: invoice.netPay,
+        itemsCount: invoice.items?.length,
+      },
+      message: `Supplier invoice ${invoice.invoiceNumber} deleted`,
+    });
+
+    res.json({ message: "Deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
 };
 
 export const downloadInvoicePDF = async (req, res) => {

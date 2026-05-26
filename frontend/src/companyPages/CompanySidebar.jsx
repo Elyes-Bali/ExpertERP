@@ -139,6 +139,12 @@ const CompanySidebar = ({ activeItem = "Settings", isOpen, setIsOpen }) => {
                           <Link to="/Company-workers" onClick={handleLinkClick}>
                             <SidebarSubItem label="Employés de l'entreprise" />
                           </Link>
+                          <Link to="/BI-Analytics" onClick={handleLinkClick}>
+                            <SidebarSubItem label="Analytique BI" />
+                          </Link>
+                           <Link to="/Audit-Logs" onClick={handleLinkClick}>
+                            <SidebarSubItem label="Logs d'audit" />
+                          </Link>
                         </>
                       )}
                     </>

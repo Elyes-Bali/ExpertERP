@@ -9,6 +9,7 @@ import { CompteFinancier } from "../models/compte.financier.model.js";
 import { Transaction } from "../models/transaction.model.js";
 import { getCompanyId } from "../utils/getCompanyId.js";
 import { User } from "../models/user.model.js";
+import { logAction } from "../utils/auditLogger.js";
 // 🔹 Get company
 // const getCompanyId = async (userId) => {
 //   const company = await Company.findOne({ user: userId });
@@ -350,9 +351,41 @@ export const updateOrderStatus = async (req, res) => {
   }
 };
 // ================= DELETE =================
+// export const deleteOrder = async (req, res) => {
+//   await SOrder.findByIdAndDelete(req.params.id);
+//   res.json({ message: "Deleted" });
+// };
+
 export const deleteOrder = async (req, res) => {
-  await SOrder.findByIdAndDelete(req.params.id);
-  res.json({ message: "Deleted" });
+  try {
+    // 1️⃣ Find first (IMPORTANT)
+    const companyId = await getCompanyId(req.userId); 
+    const order = await SOrder.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // 2️⃣ Delete
+    await SOrder.findByIdAndDelete(req.params.id);
+
+    // 3️⃣ Audit log
+    await logAction({
+      req,
+      user: req.user, // or req.userId depending on your auth middleware
+      companyId,
+      action: "DELETE",
+      entity: "SupplierOrder",
+      entityId: order._id,
+      before: order,
+      message: `Supplier order ${order.orderNumber} deleted`,
+    });
+
+    res.json({ message: "Deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
 };
 
 export const downloadOrderPDF = async (req, res) => {

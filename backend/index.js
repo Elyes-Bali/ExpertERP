@@ -38,6 +38,7 @@ import contractTypeRoutes from "./routes/contract.type.route.js";
 import internetClientRoutes from "./routes/internet.client.route.js";
 import internetPaymentRoutes from "./routes/internet.payment.route.js";
 import noteRoutes from "./routes/note.route.js";
+import auditLogRoutes from "./routes/audit.log.route.js";
 const router = express.Router();
 const openai = new OpenAI();
 
@@ -82,6 +83,7 @@ app.use("/api/contract-types", contractTypeRoutes);
 app.use("/api/internet-clients", internetClientRoutes);
 app.use("/api/internet-payments", internetPaymentRoutes);
 app.use("/api/notes", noteRoutes);
+app.use("/api/audit-logs", auditLogRoutes);
 
 // index.js
 

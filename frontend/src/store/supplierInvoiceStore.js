@@ -8,7 +8,7 @@ const API =
 
 axios.defaults.withCredentials = true;
 
-export const useInvoiceStore = create((set) => ({
+export const useSupplierInvoiceStore = create((set) => ({
   invoices: [],
 
   fetchInvoices: async () => {
