@@ -11,8 +11,7 @@ import LoadingSpinner from "./components/LoadingSpinner";
 import DashboardPage from "./pages/DashboardPage";
 import { useAuthStore } from "./store/authStore";
 import HomePage from "./pages/HomePage";
-import SummarizePDFPage from "./pages/SummarizePDFPage";
-import ChatPage from "./pages/ChatPage";
+
 import ProfilePage from "./pages/ProfilePage";
 import TestPage from "./components/TestPage";
 import PlansPage from "./pages/PlansPage";
@@ -179,22 +178,7 @@ function App() {
       <Routes>
         {/* FULL SCREEN PAGES */}
         <Route path="/" element={<HomePage />} />
-        <Route
-          path="/summarizePDF"
-          element={
-            <ProtectedRoute>
-              <SummarizePDFPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/chatAI"
-          element={
-            <PremiumProRoute>
-              <ChatPage />
-            </PremiumProRoute>
-          }
-        />
+
         <Route
           path="/profile"
           element={
@@ -404,7 +388,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-           <Route
+        <Route
           path="/Notes"
           element={
             <ProtectedRoute>
@@ -420,7 +404,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-         <Route
+        <Route
           path="/BI-Analytics"
           element={
             <ProtectedRoute>
@@ -429,7 +413,7 @@ function App() {
           }
         />
 
-         <Route
+        <Route
           path="/Audit-Logs"
           element={
             <ProtectedRoute>

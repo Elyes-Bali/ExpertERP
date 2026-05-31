@@ -217,6 +217,7 @@ export const getClientOrders = async (req, res) => {
 
 export const updateClientOrderStatus = async (req, res) => {
   try {
+    
     const { isPaid, isCanceled } = req.body;
 
     const order = await ClientOrder.findById(req.params.id).populate("items.product");

@@ -18,7 +18,6 @@ import { logAction } from "../utils/auditLogger.js";
 
 // 🔥 CALCULATION ENGINE
 
-
 const calculateOrder = async (items, companyId) => {
   let subtotal = 0;
   let totalVAT = 0;
@@ -121,11 +120,11 @@ export const createOrder = async (req, res) => {
     // const company = await Company.findOne({ user: req.userId });
     const user = await User.findById(req.userId);
 
-if (!user || !user.company) {
-  return res.status(404).json({ message: "No company found" });
-}
+    if (!user || !user.company) {
+      return res.status(404).json({ message: "No company found" });
+    }
 
-const company = await Company.findById(user.company);
+    const company = await Company.findById(user.company);
     let logoUrl = null;
 
     // 1️⃣ If user uploaded a logo → use it
@@ -188,7 +187,6 @@ export const getOrders = async (req, res) => {
   res.json(orders);
 };
 
-
 // ================= UPDATE =================
 // export const updateOrderStatus = async (req, res) => {
 //   try {
@@ -250,7 +248,9 @@ export const updateOrderStatus = async (req, res) => {
   try {
     const { isPaid } = req.body;
 
-    const order = await SOrder.findById(req.params.id).populate("items.product");
+    const order = await SOrder.findById(req.params.id).populate(
+      "items.product",
+    );
 
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
@@ -258,18 +258,26 @@ export const updateOrderStatus = async (req, res) => {
 
     const companyId = await getCompanyId(req.userId);
 
-    // 👉 get compte
-    const compte = await CompteFinancier.findOne({ company: companyId });
+    const compte = await CompteFinancier.findOne({
+      company: companyId,
+    });
+
+    console.log("COMPTE:", compte);
 
     if (!compte) {
-      return res.status(400).json({ message: "No financial account found" });
+      return res.status(400).json({
+        message: "No financial account found",
+      });
+    }
+
+    if (typeof compte.currentBalance !== "number") {
+      compte.currentBalance = 0;
     }
 
     // =====================================================
     // ✅ CASE 1: UNPAID → PAID (money OUT)
     // =====================================================
     if (isPaid && !order.isPaid) {
-
       // 🔹 STOCK INCREASE
       for (const item of order.items) {
         const product = await Product.findById(item.product._id);
@@ -307,7 +315,6 @@ export const updateOrderStatus = async (req, res) => {
     // ❗ CASE 2: PAID → UNPAID (ROLLBACK)
     // =====================================================
     if (!isPaid && order.isPaid) {
-
       // 🔹 OPTIONAL: reverse stock (if you want strict logic)
       for (const item of order.items) {
         const product = await Product.findById(item.product._id);
@@ -345,9 +352,15 @@ export const updateOrderStatus = async (req, res) => {
     const updatedOrder = await order.populate("supplier warehouse project");
 
     res.json(updatedOrder);
-
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("UPDATE STATUS ERROR:");
+    console.error(err);
+    console.error(err.stack);
+
+    res.status(500).json({
+      message: err.message,
+      stack: err.stack,
+    });
   }
 };
 // ================= DELETE =================
@@ -359,7 +372,7 @@ export const updateOrderStatus = async (req, res) => {
 export const deleteOrder = async (req, res) => {
   try {
     // 1️⃣ Find first (IMPORTANT)
-    const companyId = await getCompanyId(req.userId); 
+    const companyId = await getCompanyId(req.userId);
     const order = await SOrder.findById(req.params.id);
 
     if (!order) {
@@ -372,7 +385,7 @@ export const deleteOrder = async (req, res) => {
     // 3️⃣ Audit log
     await logAction({
       req,
-      user: req.user, // or req.userId depending on your auth middleware
+      user: req.userId, // or req.userId depending on your auth middleware
       companyId,
       action: "DELETE",
       entity: "SupplierOrder",
@@ -423,4 +436,3 @@ export const downloadOrderPDF = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-

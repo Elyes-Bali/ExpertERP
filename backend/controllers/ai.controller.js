@@ -1,60 +1,115 @@
-import express from 'express';
-import dotenv from 'dotenv';
-import cors from 'cors';
-import path from 'path';
-import cookieParser from 'cookie-parser';
-import { connectDB } from './db/connectDB.js';
-import authRoutes from './routes/auth.route.js';
-import multer from "multer";
-import { spawn } from "child_process";
-import fs from "fs";
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
+// import { geminiModel } from "../services/gemini.service.js";
+// import { ClientOrder } from "../models/client.oder.model.js";
+// import { SOrder } from "../models/supplier.order.model.js";
+// import { Invoice } from "../models/invoice.model.js";
+// import { SInvoice } from "../models/supplier.invoice.model.js";
+// import { getCompanyId } from "../utils/getCompanyId.js";
 
-app.post("/summarize", upload.single("pdf"), async (req, res) => {
-  try {
-    if (!req.file) return res.status(400).json({ success: false, message: "PDF required" });
+// export const generateBusinessInsights = async (req, res) => {
+//   try {
+//     const companyId = await getCompanyId(req.userId);
 
-    // Save PDF temporarily
-    const tempPath = path.join(process.cwd(), "temp.pdf");
-    await fs.promises.writeFile(tempPath, req.file.buffer);
+//     const clientOrders = await ClientOrder.find({
+//       company: companyId,
+//       isPaid: true,
+//       isCanceled: false,
+//     });
 
-    // Path to Python script
-    const pyScript = path.join(process.cwd(), "backend", "mailtrap", "summarize_pdf.py");
+//     const supplierOrders = await SOrder.find({
+//       company: companyId,
+//       isPaid: true,
+//     });
 
-    // Spawn Python process
-    const py = spawn("python", [pyScript, tempPath]);
+//     const invoices = await Invoice.find({
+//       company: companyId,
+//       isPaid: true,
+//     });
 
-    let finalData = "";
+//     const supplierInvoices = await SInvoice.find({
+//       company: companyId,
+//       isPaid: true,
+//     });
 
-    py.stdout.on("data", (chunk) => {
-      const lines = chunk.toString().split("\n");
-      for (const line of lines) { 
-        if (!line) continue;
-        try {
-          const msg = JSON.parse(line);
-          if (msg.progress) {
-            io.emit("pdf-progress", msg.progress); // send progress to frontend
-          }
-          if (msg.summary) {
-            finalData = msg.summary; // capture final summary
-          }
-        } catch (err) {
-          console.error("JSON parse error:", err);
-        }
-      }
-    });
+//     const revenue =
+//       [...clientOrders, ...invoices].reduce(
+//         (acc, item) => acc + (item.netPay || 0),
+//         0
+//       );
 
-    py.stderr.on("data", (chunk) => console.error("Python error:", chunk.toString()));
+//     const purchases =
+//       [...supplierOrders, ...supplierInvoices].reduce(
+//         (acc, item) => acc + (item.netPay || 0),
+//         0
+//       );
 
-    py.on("close", () => {
-      res.json({ success: true, summary: finalData });
-      // Clean up temp file
-      fs.unlink(tempPath, () => {});
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Failed to summarize PDF" });
-  }
-}
-);
+//     const profit = revenue - purchases;
+
+//     const monthlySales = {};
+
+//     [...clientOrders, ...invoices].forEach((item) => {
+//       const month = new Date(item.date).toLocaleString("fr-FR", {
+//         month: "short",
+//       });
+
+//       if (!monthlySales[month]) {
+//         monthlySales[month] = 0;
+//       }
+
+//       monthlySales[month] += item.netPay || 0;
+//     });
+
+//   const prompt = `
+// Tu es un analyste financier ERP expert.
+
+// Retourne UNIQUEMENT un JSON valide avec cette structure :
+
+// {
+//   "summary": {
+//     "title": "",
+//     "points": ["", "", ""]
+//   },
+//   "risks": [
+//     { "title": "", "severity": "high|medium|low", "description": "" }
+//   ],
+//   "opportunities": [
+//     { "title": "", "description": "" }
+//   ],
+//   "forecast": [
+//     { "month": "Juin", "value": 0 }
+//   ],
+//   "recommendations": [
+//     { "title": "", "action": "" }
+//   ]
+// }
+
+// Données:
+// Revenu: ${revenue}
+// Achats: ${purchases}
+// Profit: ${profit}
+
+// Ventes mensuelles:
+// ${JSON.stringify(monthlySales, null, 2)}
+
+// IMPORTANT:
+// - Répond uniquement en JSON
+// - Aucun texte autour
+// - Français professionnel
+// `;
+
+//     const result = await geminiModel.generateContent(prompt);
+
+//     const response = result.response.text();
+
+//     res.json({
+//       success: true,
+//       insights: response,
+//     });
+//   } catch (error) {
+//     console.error(error);
+
+//     res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };

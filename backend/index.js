@@ -3,6 +3,10 @@ import dotenv from "dotenv";
 import cors from "cors";
 import path from "path";
 import cookieParser from "cookie-parser";
+import helmet from "helmet";
+import xss from "xss-clean";
+import mongoSanitize from "express-mongo-sanitize";
+import rateLimit from "express-rate-limit";
 import { connectDB } from "./db/connectDB.js";
 import authRoutes from "./routes/auth.route.js";
 import multer from "multer";
@@ -39,16 +43,43 @@ import internetClientRoutes from "./routes/internet.client.route.js";
 import internetPaymentRoutes from "./routes/internet.payment.route.js";
 import noteRoutes from "./routes/note.route.js";
 import auditLogRoutes from "./routes/audit.log.route.js";
+dotenv.config();
+
 const router = express.Router();
 const openai = new OpenAI();
 
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const __dirname = path.resolve();
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+
+// Helmet
+// app.use(
+//   helmet({
+//     contentSecurityPolicy: false,
+//   })
+// );
+
+// XSS Protection
+app.use(xss());
+
+app.use(
+  mongoSanitize({
+    replaceWith: "_",
+  })
+);
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+});
+
+app.use(limiter);
+
+
+
 app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 app.post(
   "/api/payment/webhook",
@@ -84,16 +115,6 @@ app.use("/api/internet-clients", internetClientRoutes);
 app.use("/api/internet-payments", internetPaymentRoutes);
 app.use("/api/notes", noteRoutes);
 app.use("/api/audit-logs", auditLogRoutes);
-
-// index.js
-
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "/frontend/dist")));
-
-  app.get("/*", (req, res) => {
-    res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
-  });
-}
 
 // ----------------- Production Frontend -----------------
 if (process.env.NODE_ENV === "production") {

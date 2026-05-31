@@ -54,15 +54,41 @@ setUser: (userData) => set({ user: userData }),
         error: null,
         isLoading: false,
       });
-      return response.data.user;
+       return response.data; 
     } catch (error) {
       set({
         error: error.response?.data?.message || "Error logging in",
         isLoading: false,
       });
-      throw error;
+        return data;
+      // throw error;
     }
   },
+googleLogin: async (credential) => {
+  set({ isLoading: true, error: null });
+
+  try {
+    const res = await axios.post(`${API_URL}/google`, {
+      credential,
+    });
+
+    set({
+      user: res.data.user,
+      isAuthenticated: true,
+      token: res.data.token,
+      isLoading: false,
+    });
+
+    return res.data;
+  } catch (error) {
+    set({
+      error: error.response?.data?.message || "Google login failed",
+      isLoading: false,
+    });
+    throw error;
+  }
+},
+  
 
   logout: async () => {
     set({ isLoading: true, error: null });

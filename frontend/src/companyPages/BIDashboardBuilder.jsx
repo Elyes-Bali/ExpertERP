@@ -52,6 +52,7 @@ import { useClientOrderStore } from "../store/clientOrderStore";
 import { useInvoiceStore } from "../store/invoiceStore";
 import { useSupplierOrderStore } from "../store/supplierOrderStore";
 import { useSupplierInvoiceStore } from "../store/supplierInvoiceStore";
+import { buildForecast } from "../utils/aiForecast";
 
 /* =========================================================
    CONSTANTES
@@ -219,6 +220,11 @@ const BIDashboardBuilder = () => {
     { name: "Bénéfice",           value: Math.max(0, totalProfit), color: PALETTE.profit    },
   ].filter((d) => d.value > 0);
 
+const forecast = useMemo(() => {
+  return buildForecast(monthlyData);
+}, [monthlyData]);
+
+
   /* INSIGHTS IA */
   const generateInsights = useCallback(async () => {
     setInsightsLoading(true);
@@ -366,6 +372,32 @@ Réponds uniquement en JSON, sans markdown, entièrement en français.`;
             <MiniStat label="Factures clients"   value={paidInvoices.length}          icon={<DollarSign size={14} />} />
             <MiniStat label="Docs fournisseurs"  value={paidSupplierOrders.length + paidSupplierInvoices.length} icon={<Activity size={14} />} />
           </div>
+
+          {forecast && (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="grid grid-cols-1 xl:grid-cols-3 gap-4"
+  >
+    <ForecastCard
+      title="Prévision CA (Mois prochain)"
+      value={fmt(forecast.nextRevenue) + " TND"}
+      color="indigo"
+    />
+
+    <ForecastCard
+      title="Prévision Achats"
+      value={fmt(forecast.nextPurchases) + " TND"}
+      color="amber"
+    />
+
+    <ForecastCard
+      title="Profit estimé"
+      value={fmt(forecast.nextProfit) + " TND"}
+      color={forecast.nextProfit >= 0 ? "emerald" : "red"}
+    />
+  </motion.div>
+)}
 
           {/* RANGÉE DE GRAPHIQUES */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
@@ -633,6 +665,27 @@ const SectionCard = ({ title, subtitle, icon, children }) => (
     {children}
   </motion.div>
 );
+
+const ForecastCard = ({ title, value, color }) => {
+  const colors = {
+    indigo: "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300",
+    amber: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
+    emerald: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300",
+    red: "bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300",
+  };
+
+  return (
+    <div className={`rounded-2xl p-5 border border-gray-100 dark:border-slate-800 ${colors[color]}`}>
+      <p className="text-[10px] uppercase font-bold tracking-widest opacity-70">
+        {title}
+      </p>
+      <p className="text-2xl font-black mt-2">{value}</p>
+      <p className="text-[11px] opacity-60 mt-1">
+        Forecast automatique 
+      </p>
+    </div>
+  );
+};
 
 /* =========================================================
    CARTE D'INSIGHT

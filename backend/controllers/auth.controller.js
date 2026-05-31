@@ -11,6 +11,9 @@ import {
 } from "../mailtrap/emails.js";
 import cloudinary from "../config/cloudinary.js";
 import { Company } from "../models/company.model.js";
+import { OAuth2Client } from "google-auth-library";
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
 
 export const signup = async (req, res) => {
   const { email, password, name } = req.body;
@@ -97,12 +100,48 @@ export const login = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Invalid credentials" });
     }
+    // 🔴 1. Check if account is locked
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+      const remaining = Math.ceil((user.lockUntil - Date.now()) / 1000 / 60);
+
+      return res.status(403).json({
+        success: false,
+        message: `Account locked. Try again in ${remaining} minute(s).`,
+        lockRemainingMinutes: remaining,
+      });
+    }
     const isPasswordValid = await bcryptjs.compare(password, user.password);
     if (!isPasswordValid) {
+      user.failedLoginAttempts += 1;
+
+      const MAX_ATTEMPTS = 5;
+
+      const remainingAttempts = Math.max(
+        MAX_ATTEMPTS - user.failedLoginAttempts,
+        0,
+      );
+
+      // lock after 5 failed attempts
+      if (user.failedLoginAttempts >= MAX_ATTEMPTS) {
+        user.lockUntil = Date.now() + 5 * 60 * 1000; // 5 minutes
+        user.failedLoginAttempts = 0;
+      }
+      await user.save();
+
       return res
         .status(400)
-        .json({ success: false, message: "Invalid credentials" });
+        .json({
+          success: false,
+          message: "Invalid credentials",
+          remainingAttempts,
+        });
     }
+    // 🔵 3. Success login → reset counters
+    user.failedLoginAttempts = 0;
+    user.lockUntil = null;
+
+    user.lastLogin = new Date();
+    await user.save();
 
     generateTokenAndSetCookie(res, user._id);
 
@@ -117,13 +156,64 @@ export const login = async (req, res) => {
         password: undefined,
       },
       serviceUsageCount: user.serviceUsageCount,
-
     });
   } catch (error) {
     console.log("Error in login ", error);
     res.status(400).json({ success: false, message: error.message });
   }
 };
+
+
+export const googleLogin = async (req, res) => {
+  try {
+    const { credential } = req.body; // Google ID token
+
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    const { email, name, sub, picture } = payload;
+
+    let user = await User.findOne({ email });
+
+    // if user doesn't exist → create it
+    if (!user) {
+      user = await User.create({
+        email,
+        name,
+        password: null,
+        googleId: sub,
+        authProvider: "google",
+        profileImage: picture,
+        isVerified: true,
+      });
+    }
+
+    // if exists but not linked
+    if (!user.googleId) {
+      user.googleId = sub;
+      user.authProvider = "google";
+      user.isVerified = true;
+      await user.save();
+    }
+
+    generateTokenAndSetCookie(res, user._id);
+
+    return res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    console.log("Google login error:", error);
+    res.status(400).json({ success: false, message: "Google auth failed" });
+  }
+};
+
+
+
 
 export const logout = async (req, res) => {
   res.clearCookie("token");
@@ -153,7 +243,7 @@ export const forgotPassword = async (req, res) => {
     // send email
     await sendPasswordResetEmail(
       user.email,
-      `${process.env.CLIENT_URL}/reset-password/${resetToken}`
+      `${process.env.CLIENT_URL}/reset-password/${resetToken}`,
     );
 
     res.status(200).json({
@@ -229,7 +319,7 @@ export const checkAuth = async (req, res) => {
     // 🔥 Calculate remaining subscription days
     const daysRemaining = user.planExpiresAt
       ? Math.ceil(
-          (new Date(user.planExpiresAt) - new Date()) / (1000 * 60 * 60 * 24)
+          (new Date(user.planExpiresAt) - new Date()) / (1000 * 60 * 60 * 24),
         )
       : 0;
 
@@ -276,7 +366,7 @@ export const updateProfile = async (req, res) => {
                 console.log("✅ Cloudinary upload success:", result.secure_url);
                 resolve(result);
               }
-            }
+            },
           );
           stream.end(req.file.buffer);
         });
@@ -326,11 +416,13 @@ export const isVerifiedUpdate = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       userId,
       { isVerified },
-      { new: true }
+      { new: true },
     ).select("-password");
 
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     res.status(200).json({ success: true, message: "User updated", user });
@@ -339,7 +431,6 @@ export const isVerifiedUpdate = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
 
 export const getCompanyUsers = async (req, res) => {
   try {
@@ -351,8 +442,7 @@ export const getCompanyUsers = async (req, res) => {
     }
 
     // 2. get users linked to this company
-    const users = await User.find({ company: company._id })
-      .select("-password");
+    const users = await User.find({ company: company._id }).select("-password");
 
     res.status(200).json(users);
   } catch (err) {
