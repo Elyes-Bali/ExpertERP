@@ -3,8 +3,7 @@ import { Product } from "../models/product.model.js";
 import { Company } from "../models/company.model.js";
 import { Tax } from "../models/tax.model.js";
 import cloudinary from "../config/cloudinary.js";
-import puppeteer from "puppeteer-core";
-import { execSync } from "child_process";
+import puppeteer from "puppeteer";
 import { supplierOrderTemplate } from "../templates/supplierOrderTemplate.js";
 import { CompteFinancier } from "../models/compte.financier.model.js";
 import { Transaction } from "../models/transaction.model.js";
@@ -401,17 +400,6 @@ export const deleteOrder = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-const getChromiumPath = () => {
-  try {
-    return execSync(
-      "which chromium || which chromium-browser || which google-chrome",
-    )
-      .toString()
-      .trim();
-  } catch {
-    return "/usr/bin/chromium";
-  }
-};
 
 export const downloadOrderPDF = async (req, res) => {
   try {
@@ -423,11 +411,7 @@ export const downloadOrderPDF = async (req, res) => {
 
     const html = supplierOrderTemplate(order);
 
-    const browser = await puppeteer.launch({
-      executablePath: getChromiumPath(),
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-      headless: true,
-    }); // safer for some environments
+    const browser = await puppeteer.launch({ args: ["--no-sandbox"] }); // safer for some environments
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
 
