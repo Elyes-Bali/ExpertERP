@@ -8,7 +8,8 @@ import fs from "fs";
 import path from "path";
 import { Supplier } from "../models/supplier.model.js";
 import axios from "axios";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
+import { execSync } from "child_process";
 import { supplierInvoiceTemplate } from "../templates/supplierInvoiceTemplate.js";
 import { getCompanyId } from "../utils/getCompanyId.js";
 import { User } from "../models/user.model.js";
@@ -20,7 +21,6 @@ import { logAction } from "../utils/auditLogger.js";
 // };
 
 // 🔥 CALCULATION ENGINE
-
 
 const calculateInvoice = async (items, companyId) => {
   let subtotal = 0;
@@ -124,11 +124,11 @@ export const createInvoice = async (req, res) => {
     // const company = await Company.findOne({ user: req.userId });
     const user = await User.findById(req.userId);
 
-if (!user || !user.company) {
-  return res.status(404).json({ message: "No company found" });
-}
+    if (!user || !user.company) {
+      return res.status(404).json({ message: "No company found" });
+    }
 
-const company = await Company.findById(user.company);
+    const company = await Company.findById(user.company);
     let logoUrl = null;
 
     // 1️⃣ If user uploaded a logo → use it
@@ -191,7 +191,6 @@ export const getInvoices = async (req, res) => {
   res.json(invoices);
 };
 
-
 // ================= UPDATE =================
 export const updateInvoiceStatus = async (req, res) => {
   try {
@@ -200,7 +199,7 @@ export const updateInvoiceStatus = async (req, res) => {
     const invoice = await SInvoice.findByIdAndUpdate(
       req.params.id,
       { isPaid },
-      { new: true }
+      { new: true },
     ).populate("supplier warehouse project");
 
     if (!invoice) {
@@ -222,9 +221,9 @@ export const updateInvoiceStatus = async (req, res) => {
 export const deleteInvoice = async (req, res) => {
   try {
     // 1. GET INVOICE FIRST (IMPORTANT)
-    const companyId = await getCompanyId(req.userId); 
+    const companyId = await getCompanyId(req.userId);
     const invoice = await SInvoice.findById(req.params.id).populate(
-      "items.product"
+      "items.product",
     );
 
     if (!invoice) {
@@ -273,6 +272,17 @@ export const deleteInvoice = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+const getChromiumPath = () => {
+  try {
+    return execSync(
+      "which chromium || which chromium-browser || which google-chrome",
+    )
+      .toString()
+      .trim();
+  } catch {
+    return "/usr/bin/chromium";
+  }
+};
 
 export const downloadInvoicePDF = async (req, res) => {
   try {
@@ -284,7 +294,11 @@ export const downloadInvoicePDF = async (req, res) => {
 
     const html = supplierInvoiceTemplate(invoice);
 
-    const browser = await puppeteer.launch({ args: ["--no-sandbox"] }); // safer for some environments
+    const browser = await puppeteer.launch({
+      executablePath: getChromiumPath(),
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      headless: true,
+    }); // safer for some environments
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
 
@@ -309,4 +323,3 @@ export const downloadInvoicePDF = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-

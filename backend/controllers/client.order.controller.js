@@ -8,7 +8,8 @@ import fs from "fs";
 import path from "path";
 import { Customer } from "../models/customer.model.js";
 import axios from "axios";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
+import { execSync } from "child_process";
 import { clientOrderTemplate } from "../templates/clientOrderTemplate.js";
 import { Transaction } from "../models/transaction.model.js";
 import { CompteFinancier } from "../models/compte.financier.model.js";
@@ -118,17 +119,16 @@ const generateClientOrderNumber = async (companyId) => {
   return `ORD-${year}-${nextNumber}`;
 };
 
-
 export const createClientOrder = async (req, res) => {
   try {
     // const company = await Company.findOne({ user: req.userId });
     const user = await User.findById(req.userId);
 
-if (!user || !user.company) {
-  return res.status(404).json({ message: "No company found" });
-}
+    if (!user || !user.company) {
+      return res.status(404).json({ message: "No company found" });
+    }
 
-const company = await Company.findById(user.company);
+    const company = await Company.findById(user.company);
     let logoUrl = null;
     let qrLogoUrl = null;
 
@@ -151,7 +151,7 @@ const company = await Company.findById(user.company);
       logoUrl = company.image || null;
     }
 
-        if (req.file) {
+    if (req.file) {
       const uploadResult = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           { folder: "order_logos" },
@@ -168,7 +168,6 @@ const company = await Company.findById(user.company);
       // 2️⃣ Otherwise → use company image automatically
       qrLogoUrl = company.qrImage || null;
     }
-
 
     const items = JSON.parse(req.body.items); // ⚠️ IMPORTANT
 
@@ -212,15 +211,15 @@ export const getClientOrders = async (req, res) => {
   res.json(orders);
 };
 
-
 // ================= UPDATE =================
 
 export const updateClientOrderStatus = async (req, res) => {
   try {
-    
     const { isPaid, isCanceled } = req.body;
 
-    const order = await ClientOrder.findById(req.params.id).populate("items.product");
+    const order = await ClientOrder.findById(req.params.id).populate(
+      "items.product",
+    );
 
     if (!order) {
       return res.status(404).json({ message: "Client order not found" });
@@ -344,7 +343,7 @@ export const updateClientOrderStatus = async (req, res) => {
     await order.save();
 
     const updatedOrder = await ClientOrder.findById(order._id).populate(
-      "customer warehouse project"
+      "customer warehouse project",
     );
 
     res.json(updatedOrder);
@@ -362,9 +361,9 @@ export const updateClientOrderStatus = async (req, res) => {
 export const deleteClientOrder = async (req, res) => {
   try {
     // 1. GET ORDER FIRST (CRITICAL FOR AUDIT + STOCK LOGIC)
-    const companyId = await getCompanyId(req.userId); 
+    const companyId = await getCompanyId(req.userId);
     const order = await ClientOrder.findById(req.params.id).populate(
-      "items.product"
+      "items.product",
     );
 
     if (!order) {
@@ -383,7 +382,7 @@ export const deleteClientOrder = async (req, res) => {
     }
 
     // 3. DELETE ORDER
-    
+
     await ClientOrder.findByIdAndDelete(req.params.id);
 
     // 4. AUDIT LOG
@@ -410,17 +409,34 @@ export const deleteClientOrder = async (req, res) => {
   }
 };
 
+const getChromiumPath = () => {
+  try {
+    return execSync(
+      "which chromium || which chromium-browser || which google-chrome",
+    )
+      .toString()
+      .trim();
+  } catch {
+    return "/usr/bin/chromium";
+  }
+};
+
 export const downloadClientOrderPDF = async (req, res) => {
   try {
     const order = await ClientOrder.findById(req.params.id).populate(
       "company customer items.product warehouse project",
     );
 
-    if (!order) return res.status(404).json({ message: "Client order not found" });
+    if (!order)
+      return res.status(404).json({ message: "Client order not found" });
 
     const html = clientOrderTemplate(order);
 
-    const browser = await puppeteer.launch({ args: ["--no-sandbox"] }); // safer for some environments
+    const browser = await puppeteer.launch({
+      executablePath: getChromiumPath(),
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      headless: true,
+    }); // safer for some environments
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
 
@@ -445,4 +461,3 @@ export const downloadClientOrderPDF = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
