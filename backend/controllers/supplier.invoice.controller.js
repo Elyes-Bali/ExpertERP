@@ -8,7 +8,8 @@ import fs from "fs";
 import path from "path";
 import { Supplier } from "../models/supplier.model.js";
 import axios from "axios";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 import { supplierInvoiceTemplate } from "../templates/supplierInvoiceTemplate.js";
 import { getCompanyId } from "../utils/getCompanyId.js";
 import { User } from "../models/user.model.js";
@@ -284,7 +285,12 @@ export const downloadInvoicePDF = async (req, res) => {
 
     const html = supplierInvoiceTemplate(invoice);
 
-    const browser = await puppeteer.launch({ args: ["--no-sandbox"] }); // safer for some environments
+    const browser = await puppeteer.launch({
+  args: chromium.args,
+  defaultViewport: chromium.defaultViewport,
+  executablePath: await chromium.executablePath(),
+  headless: chromium.headless,
+});// safer for some environments
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
 

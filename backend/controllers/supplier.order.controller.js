@@ -3,7 +3,8 @@ import { Product } from "../models/product.model.js";
 import { Company } from "../models/company.model.js";
 import { Tax } from "../models/tax.model.js";
 import cloudinary from "../config/cloudinary.js";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 import { supplierOrderTemplate } from "../templates/supplierOrderTemplate.js";
 import { CompteFinancier } from "../models/compte.financier.model.js";
 import { Transaction } from "../models/transaction.model.js";
@@ -411,7 +412,12 @@ export const downloadOrderPDF = async (req, res) => {
 
     const html = supplierOrderTemplate(order);
 
-    const browser = await puppeteer.launch({ args: ["--no-sandbox"] }); // safer for some environments
+    const browser = await puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
+    }); // safer for some environments
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
 

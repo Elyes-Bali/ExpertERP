@@ -8,7 +8,8 @@ import fs from "fs";
 import path from "path";
 import { Customer } from "../models/customer.model.js";
 import axios from "axios";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 import { invoiceTemplate } from "../templates/invoiceTemplate.js";
 import { getCompanyId } from "../utils/getCompanyId.js";
 import { User } from "../models/user.model.js";
@@ -261,7 +262,7 @@ export const updateInvoiceStatus = async (req, res) => {
 export const deleteInvoice = async (req, res) => {
   try {
     // 1. FIRST fetch invoice (before deleting)
-    const companyId = await getCompanyId(req.userId); 
+    const companyId = await getCompanyId(req.userId);
     const invoice = await Invoice.findById(req.params.id);
 
     if (!invoice) {
@@ -300,7 +301,12 @@ export const downloadInvoicePDF = async (req, res) => {
 
     const html = invoiceTemplate(invoice);
 
-    const browser = await puppeteer.launch({ args: ["--no-sandbox"] }); // safer for some environments
+    const browser = await puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
+    }); // safer for some environments
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
 
@@ -325,4 +331,3 @@ export const downloadInvoicePDF = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
